@@ -1,15 +1,23 @@
-To start the backend project:
+# Full-Stack Project Setup Guide
 
-1. Open the vscode inside the "backend" directory.
-2. Open terminal
-3. In the console:
-   write: npm install
-   To run the project, write: node ./app.js
+Follow these steps to set up both the backend and frontend of the project.
 
-To the start the frontend projectL
+---
 
-1. Open the vscode inside the "frontend" directory.
-2. Open the terminal
-3. In the console:
-   write: npm install
-   To the run the project, write: npm run dev
+## 📌 Backend Setup
+
+1. Open **VS Code** inside the `backend` directory.
+2. Open the terminal.
+3. Run the following commands:
+   ```sh
+   npm install
+   node ./app.js
+
+## 📌 Frontend Setup
+
+1. Open **VS Code** inside the `frontend` directory.
+2. Open the terminal.
+3. Run the following commands:
+   ```sh
+   npm install
+   npm run dev
