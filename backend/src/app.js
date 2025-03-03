@@ -3,11 +3,11 @@ import cors from "cors"
 
 import { PythonShell } from "python-shell"
 
-import { auth } from "./config/firebase";
-import {createUserWithEmailAndPassword , signInWithEmailAndPassword , signOut} from 'firebase/auth'
+import { auth, db } from "./config/adminFirebase.js"
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 
-import { db } from "./config/firebase"
-import {getDocs , collection , addDoc , deleteDoc , doc , updateDoc} from 'firebase/firestore'
+
+import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 
 const app = express();
 app.use(express.json());
@@ -15,23 +15,24 @@ app.use(cors());
 
 
 // Login
-app.post("/login" , async (req,res) => {
+app.post("/login", async (req, res) => {
 
     const data = req.body;
-    console.log("Received login Data: " + data)
+    console.log("Received login Data: " + data.email + " " + data.password)
 
     if (!data) {
         return res.status(400).json({ error: "No data received" });
     }
 
     // Retrieve student from database and return him
-    
+    res.json({ message: "Data received" })
+
 })
 
 ///////////////////////////////////////////////
 
 // Registration
-app.post("/registration" , async (req,res) => {
+app.post("/registration", async (req, res) => {
 
     const data = req.body;
     console.log("Received Registration Data: " + data)
