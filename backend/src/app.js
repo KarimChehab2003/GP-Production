@@ -9,6 +9,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } f
 
 import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 
+
 const app = express();
 app.use(express.json());
 app.use(cors());
