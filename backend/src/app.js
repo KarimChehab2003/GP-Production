@@ -1,16 +1,56 @@
 import express from "express"
 import cors from "cors"
+
 import { PythonShell } from "python-shell"
 
-// import cmca from "./Classes/CMCA.js"
+import { auth } from "./config/firebase";
+import {createUserWithEmailAndPassword , signInWithEmailAndPassword , signOut} from 'firebase/auth'
+
+import { db } from "./config/firebase"
+import {getDocs , collection , addDoc , deleteDoc , doc , updateDoc} from 'firebase/firestore'
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
+
+// Login
+app.post("/login" , async (req,res) => {
+
+    const data = req.body;
+    console.log("Received login Data: " + data)
+
+    if (!data) {
+        return res.status(400).json({ error: "No data received" });
+    }
+
+    // Retrieve student from database and return him
+    
+})
+
+///////////////////////////////////////////////
+
+// Registration
+app.post("/registration" , async (req,res) => {
+
+    const data = req.body;
+    console.log("Received Registration Data: " + data)
+
+    if (!data) {
+        return res.status(400).json({ error: "No data received" });
+    }
+
+    // Add Student to database and return him
+
+})
+
+
+///////////////////////////////////////////////
+
+// CMCA
 app.post("/submit-scores", async (req, res) => {
     const data = req.body;
-    console.log("Received data:", data);
+    console.log("Received CMCA:", data);
 
     if (!data) {
         return res.status(400).json({ error: "No data received" });
@@ -50,8 +90,7 @@ app.post("/submit-scores", async (req, res) => {
     }
 });
 
-
+///////////////////////////////////////////////
 
 const port = 5100;
-
 app.listen(port, console.log("Listening on port " + port + "..."))
