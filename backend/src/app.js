@@ -4,7 +4,7 @@ import cors from "cors"
 import { PythonShell } from "python-shell"
 
 import { db } from "./config/adminFirebase.js"
-import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
+import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc , getDoc } from 'firebase/firestore'
 
 
 const app = express();
@@ -24,7 +24,7 @@ app.post("/login", async (req, res) => {
     if (!data) {
         return res.status(400).json({ error: "No data received" });
     }
-    
+
     // Retrieve student from database and return him if not available then return invalid string
     try{
         const studentsDocs = await getDocs(studentsCollectionRef)
@@ -38,24 +38,54 @@ app.post("/login", async (req, res) => {
         }
 
     }catch(err){
-        console.error("There is an error : " , err)
+        return res.status(500).json({ error: err});
     }
 })
 
 ///////////////////////////////////////////////
 
 // Registration
-app.post("/registration", async (req, res) => {
+app.post("/registration1", async (req, res) => {
 
     const data = req.body;
-    console.log("Received Registration Data: " + data.email)
+    console.log("Received Registration1 Data: " + data.fname + " " + data.lname + " " + data.email + " " + data.password)
 
     if (!data) {
         return res.status(400).json({ error: "No data received" });
     }
 
-    // Add Student to database and return him
+    // Make sure email is not already available
+    try{
+        const studentsDocs = await getDocs(studentsCollectionRef)
+        const filteredStudentData = studentsDocs.docs.map((doc) => ({...doc.data() , id : doc.id}))
 
+        const retrievedStudent = filteredStudentData.find((student) => student.email == data.email)
+
+        if(retrievedStudent){
+            return res.status(400).json({ error: "User email Already Taken"});
+        }
+    }catch(err){
+        return res.status(500).json({ error: err});
+    }
+
+    // Add Student to database and return him
+    try{
+        const createdStudentRef = await addDoc(studentsCollectionRef , {
+            fname : data.fname,
+            lname : data.lname,
+            email : data.email,
+            password : data.password
+        })
+        const createdStudent = await getDoc(createdStudentRef);
+
+        if (createdStudent.exists()) {
+            res.json({ id: createdStudentRef.id, ...createdStudent.data() });
+        } else {
+            res.status(404).json({ error: "Document not found" });
+        }
+    }catch(err){
+        return res.status(500).json({error : err});
+    }
 })
 
 
