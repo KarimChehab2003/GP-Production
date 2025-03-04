@@ -3,10 +3,7 @@ import cors from "cors"
 
 import { PythonShell } from "python-shell"
 
-import { auth, db } from "./config/adminFirebase.js"
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
-
-
+import { db } from "./config/adminFirebase.js"
 import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 
 
@@ -14,6 +11,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+const studentsCollectionRef = collection(db , "students")
+const coursesCollectionRef = collection(db , "courses")
+const weeklyReportCollectionRef = collection(db , "weekly report")
 
 // Login
 app.post("/login", async (req, res) => {
@@ -24,10 +24,22 @@ app.post("/login", async (req, res) => {
     if (!data) {
         return res.status(400).json({ error: "No data received" });
     }
+    
+    // Retrieve student from database and return him if not available then return invalid string
+    try{
+        const studentsDocs = await getDocs(studentsCollectionRef)
+        const filteredStudentData = studentsDocs.docs.map((doc) => ({...doc.data() , id : doc.id}))
 
-    // Retrieve student from database and return him
-    res.json({ message: "Data received" })
+        const retrievedStudent = filteredStudentData.find((student) => student.email == data.email && student.password == data.password)
+        if(retrievedStudent){
+            res.json(retrievedStudent);
+        }else{
+            return res.status(404).json({ error: "User Does not exist" });
+        }
 
+    }catch(err){
+        console.error("There is an error : " , err)
+    }
 })
 
 ///////////////////////////////////////////////
@@ -36,7 +48,7 @@ app.post("/login", async (req, res) => {
 app.post("/registration", async (req, res) => {
 
     const data = req.body;
-    console.log("Received Registration Data: " + data)
+    console.log("Received Registration Data: " + data.email)
 
     if (!data) {
         return res.status(400).json({ error: "No data received" });
