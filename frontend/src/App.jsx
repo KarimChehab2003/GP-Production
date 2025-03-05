@@ -1,13 +1,12 @@
 import React, { useState } from "react";
-import LoginPage from "./components/pages/LoginPage";
-import Registration from "./components/pages/Registration";
+import SignIn from "./pages/SignIn";
+import Registration from "./pages/Registration";
 const App = () => {
   const [currentUser, setCurrentUser] = useState({});
   return (
     <div>
-      <LoginPage setCurrentUser={setCurrentUser} />
-      <Registration setCurrentUser={setCurrentUser}/>
-      
+      <Registration setCurrentUser={setCurrentUser} />
+      {/* <SignIn setCurrentUser={setCurrentUser} /> */}
     </div>
   );
 };

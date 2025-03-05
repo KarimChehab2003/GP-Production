@@ -4,16 +4,16 @@ import cors from "cors"
 import { PythonShell } from "python-shell"
 
 import { db } from "./config/adminFirebase.js"
-import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc , getDoc } from 'firebase/firestore'
+import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore'
 
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const studentsCollectionRef = collection(db , "students")
-const coursesCollectionRef = collection(db , "courses")
-const weeklyReportCollectionRef = collection(db , "weekly report")
+const studentsCollectionRef = collection(db, "students")
+const coursesCollectionRef = collection(db, "courses")
+const weeklyReportCollectionRef = collection(db, "weekly report")
 
 // Login
 app.post("/login", async (req, res) => {
@@ -26,55 +26,56 @@ app.post("/login", async (req, res) => {
     }
 
     // Retrieve student from database and return him if not available then return invalid string
-    try{
+    try {
         const studentsDocs = await getDocs(studentsCollectionRef)
-        const filteredStudentData = studentsDocs.docs.map((doc) => ({...doc.data() , id : doc.id}))
+        const filteredStudentData = studentsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
 
         const retrievedStudent = filteredStudentData.find((student) => student.email == data.email && student.password == data.password)
-        if(retrievedStudent){
+        if (retrievedStudent) {
             res.json(retrievedStudent);
-        }else{
+        } else {
             return res.status(404).json({ error: "User Does not exist" });
         }
 
-    }catch(err){
-        return res.status(500).json({ error: err});
+    } catch (err) {
+        return res.status(500).json({ error: err });
     }
 })
 
 ///////////////////////////////////////////////
 
 // Registration
-app.post("/registration1", async (req, res) => {
+app.post("/registration", async (req, res) => {
 
     const data = req.body;
-    console.log("Received Registration1 Data: " + data.fname + " " + data.lname + " " + data.email + " " + data.password)
+    // console.log("Received Registration1 Data: " + data.fname + " " + data.lname + " " + data.email + " " + data.password)
+    console.log("Received Data: ", data)
 
     if (!data) {
         return res.status(400).json({ error: "No data received" });
     }
 
     // Make sure email is not already available
-    try{
+    try {
         const studentsDocs = await getDocs(studentsCollectionRef)
-        const filteredStudentData = studentsDocs.docs.map((doc) => ({...doc.data() , id : doc.id}))
+        const filteredStudentData = studentsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
 
         const retrievedStudent = filteredStudentData.find((student) => student.email == data.email)
 
-        if(retrievedStudent){
-            return res.status(400).json({ error: "User email Already Taken"});
+        if (retrievedStudent) {
+            return res.status(400).json({ error: "User email Already Taken" });
         }
-    }catch(err){
-        return res.status(500).json({ error: err});
+    } catch (err) {
+        return res.status(500).json({ error: err });
     }
 
     // Add Student to database and return him
-    try{
-        const createdStudentRef = await addDoc(studentsCollectionRef , {
-            fname : data.fname,
-            lname : data.lname,
-            email : data.email,
-            password : data.password
+    try {
+        const createdStudentRef = await addDoc(studentsCollectionRef, {
+            fname: data.fname,
+            lname: data.lname,
+            email: data.email,
+            password: data.password
         })
         const createdStudent = await getDoc(createdStudentRef);
 
@@ -83,8 +84,8 @@ app.post("/registration1", async (req, res) => {
         } else {
             res.status(404).json({ error: "Document not found" });
         }
-    }catch(err){
-        return res.status(500).json({error : err});
+    } catch (err) {
+        return res.status(500).json({ error: err });
     }
 })
 

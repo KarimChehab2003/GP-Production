@@ -1,0 +1,249 @@
+/*
+Colors: rgb(60, 66, 87)
+
+*/
+
+/* * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.5rem #3359f26f;
+} */
+
+/* html {
+  font-size: 62.5%;  I would personally avoid changing the default font-size, but it's up to you 
+} */
+
+.sign-in-wrapper {
+  color: rgb(60, 66, 87);
+  /* font-family: "Inter", sans-serif; <-- I imported it into the index.css so its used globally now */
+  font-weight: 400;
+  line-height: 1.6;
+  font-size: 62.5%;
+
+  /* New addition to center it */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  width: 120rem;
+  margin: auto;
+  padding: 1.6rem;
+}
+
+.logo {
+  font-size: 2.4rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* .gradient {
+  height: 60vh;
+  clip-path: polygon(0 0, 100% 0, 100% 20%, 0 100%);
+  background: linear-gradient(45deg, orange, purple, blue, cyan);
+  background-size: 300% 300%;
+  animation: gradientAnimation 7s linear infinite;
+} */
+
+.gradient {
+  /* Added position to put it behind the form */
+  width: 100vw;
+  height: 60vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+
+  clip-path: polygon(0 0, 100% 0, 100% 20%, 0 100%);
+  background: linear-gradient(45deg, orange, purple, blue, cyan);
+
+  /* I was just trying out different colors cause I like the effect, don't mind me lol  */
+
+  /* background: linear-gradient(45deg, #ff7f50, #da70d6, #4169e1, #40e0d0); */
+  /* background: linear-gradient(45deg, #0f2027, #203a43, #2c5364, #00c9ff); */
+  /* background: linear-gradient(45deg, #2e8b57, #3cb371, #66cdaa, #20b2aa); */
+
+  background-size: 300% 300%;
+  animation: gradientAnimation 7s linear infinite;
+}
+
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 100%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.logo-link {
+  text-decoration: none;
+  color: #fff;
+}
+
+.sign-in-section {
+  /* transform: translateY(-50rem); <-- This caused the form to have a lot of whitespace below it */
+}
+
+.sign-in-form {
+  /* margin-top: 10rem; <-- This caused it not to be centered */
+  padding: 6rem;
+  border: none;
+  border-radius: 11px;
+  background-color: #fff;
+  width: 60rem;
+  box-shadow: 0 2rem 2.4rem rgba(0, 0, 0, 0.2);
+}
+
+.sign-text {
+  font-size: 2.4rem;
+  margin-bottom: 4rem;
+  font-weight: 700;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 2rem;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+.forget-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.forget-container span {
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+.forget-container span:last-child {
+  color: #4c6ef5;
+}
+
+.form-input {
+  width: 100%;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  height: 4rem;
+  border-radius: 7px;
+  margin-bottom: 2rem;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0 5rem 0;
+}
+
+.check-form-label {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  margin-right: 1rem;
+  transition: all 0.3s;
+}
+
+.forgot-password {
+  text-decoration: none;
+  font-size: 1.4rem;
+  position: relative;
+  color: #4c6ef5;
+}
+
+.forgot-password:hover {
+  color: #3359f2;
+}
+
+.forgot-password::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background-color: #4c6ef5;
+  transition: width 0.4s ease-in-out;
+}
+
+.forgot-password:hover::after {
+  width: 100%;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #4c6ef5;
+}
+
+input[type="checkbox"].check-form-label:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 3px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.remember-me-text {
+  font-size: 1.2rem;
+}
+
+.btn {
+  text-align: center;
+  font-size: 1.6rem;
+  display: block;
+  width: 100%;
+  border: none;
+  background-color: #4c6ef5;
+  color: #fff;
+  padding: 1.6rem 0;
+  border-radius: 7px;
+  margin-bottom: 5rem;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background-color: #3359f2;
+}
+
+.new-to-aspg {
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.go-to-reg {
+  color: #4c6ef5;
+  text-decoration: none;
+  font-weight: 700;
+}
+.go-to-reg:hover {
+  color: #3359f2;
+}

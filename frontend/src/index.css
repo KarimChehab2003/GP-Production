@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+html {
+  font-family: "Inter", sans-serif;
+}
+
+.charcoal {
+  color: #333 !important;
+}
