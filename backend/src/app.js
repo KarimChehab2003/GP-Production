@@ -28,9 +28,9 @@ app.post("/login", async (req, res) => {
     // Retrieve student from database and return him if not available then return invalid string
     try {
         const studentsDocs = await getDocs(studentsCollectionRef)
-        const filteredStudentData = studentsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
+        const filteredStudentsData = studentsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
 
-        const retrievedStudent = filteredStudentData.find((student) => student.email == data.email && student.password == data.password)
+        const retrievedStudent = filteredStudentsData.find((student) => student.email == data.email && student.password == data.password)
         if (retrievedStudent) {
             res.json(retrievedStudent);
         } else {
@@ -48,7 +48,6 @@ app.post("/login", async (req, res) => {
 app.post("/registration", async (req, res) => {
 
     const data = req.body;
-    // console.log("Received Registration1 Data: " + data.fname + " " + data.lname + " " + data.email + " " + data.password)
     console.log("Received Data: ", data)
 
     if (!data) {
@@ -69,24 +68,66 @@ app.post("/registration", async (req, res) => {
         return res.status(500).json({ error: err });
     }
 
-    // Add Student to database and return him
+    // Add Courses to the database and save their references to be added to the student
     try {
-        const createdStudentRef = await addDoc(studentsCollectionRef, {
-            fname: data.fname,
-            lname: data.lname,
-            email: data.email,
-            password: data.password
-        })
-        const createdStudent = await getDoc(createdStudentRef);
+        var CoursesRef = []
 
-        if (createdStudent.exists()) {
-            res.json({ id: createdStudentRef.id, ...createdStudent.data() });
-        } else {
-            res.status(404).json({ error: "Document not found" });
+        for (const course of data.courses) {
+
+            let lecturesAndSectionsTimeslots = [];
+
+            for (let i = 0; i < course.timeSlots.length; i++) {
+                lecturesAndSectionsTimeslots.push(course.timeSlots[i]);
+            }
+
+            const createdCourseRef = await addDoc(coursesCollectionRef, {
+                courseName : course.courseName,
+                cmca :{
+                    analysis : course.scores.Analysis,
+                    computation : course.scores.Computation,
+                    creativity : course.scores.Creativity,
+                    memorization : course.scores.Memorization
+                },
+                exam_date : {
+                    hour : course.examDate.hour,
+                    day : course.examDate.day
+                } ,
+                LecturesAndSectionsTimeslots : lecturesAndSectionsTimeslots,
+            });
+            
+            
+            CoursesRef.push(createdCourseRef.id)
+            
+        }} 
+        catch (err) {
+            return res.status(500).json({ error: "Couldn't add courses to the database" });
+        } 
+
+        // Add Student to the database with his courses references
+        try{
+            const createdStudentRef = await addDoc(studentsCollectionRef, {
+                fname: data.fname,
+                lname: data.lname,
+                email: data.email,
+                password: data.password,
+                cgpa : data.cgpa,
+                sleeping_time : data.sleepingHours,
+                courses : CoursesRef,
+                study_hours : 0,
+                weekly_report : null,
+                timetable : null
+            })
+            const createdStudent = await getDoc(createdStudentRef);
+
+            if (createdStudent.exists()) {
+                res.json({ id: createdStudentRef.id, ...createdStudent.data() });
+            } else {
+                res.status(404).json({ error: "Document not found" });
+            }
+
+        }catch(err){
+            return res.status(500).json({ error: err });
         }
-    } catch (err) {
-        return res.status(500).json({ error: err });
-    }
 })
 
 
