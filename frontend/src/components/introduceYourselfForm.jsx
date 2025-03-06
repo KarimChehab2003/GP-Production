@@ -45,7 +45,7 @@ const IntroduceYourselfForm = ({
                 onChange={(e) =>
                   setCreatedUser((prevState) => ({
                     ...prevState,
-                    cpga: e.target.value,
+                    cgpa: e.target.value,
                   }))
                 }
               />
