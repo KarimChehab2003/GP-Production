@@ -1,6 +1,6 @@
 import express from "express"
 import cors from "cors"
-
+import generateSchedule from "./functions/generateSchedule.js"
 import { PythonShell } from "python-shell"
 
 import { db } from "./config/adminFirebase.js"
@@ -49,7 +49,8 @@ app.post("/registration", async (req, res) => {
 
     const data = req.body;
     // console.log("Received Registration1 Data: " + data.fname + " " + data.lname + " " + data.email + " " + data.password)
-    console.log("Received Data: ", data)
+    console.log("Received Data: ", data.courses.scores)
+
 
     if (!data) {
         return res.status(400).json({ error: "No data received" });
@@ -136,6 +137,42 @@ app.post("/submit-scores", async (req, res) => {
 });
 
 ///////////////////////////////////////////////
+
+// Sample Input
+let collegeSchedule = {
+    "Monday": { "8AM-10AM": "Lec: Math" },
+    "Wednesday": { "2PM-4PM": "Sec: Physics" }
+};
+
+let externalActivities = {
+    "Gym": ["Thursday", "12PM-2PM"],
+    "Club": ["Sunday", "4PM-6PM"]
+};
+
+let courses = {
+    "AI": ["2PM-4PM", 8],
+    "Elec": ["8PM-10PM", 2]
+};
+
+// let schedule = generateSchedule(collegeSchedule, externalActivities, courses);
+// console.log(schedule)
+// Output Results
+// if (Object.keys(schedule).length === 0) {
+//     Warnings.forEach((warning, i) => console.log(`Warning ${i + 1}: ${warning}`));
+// } else {
+//     console.log("\nGenerated Schedule:\n");
+//     console.log("".padEnd(15) + days.map(day => day.padEnd(15)).join(""));
+//     console.log("-".repeat(15 + days.length * 15));
+//     timeSlots.forEach(slot => {
+//         console.log(slot.padEnd(15) + days.map(day => (schedule[day][slot] || "-").padEnd(15)).join(""));
+//     });
+
+//     if (Warnings.length) {
+//         console.log("\nWarnings:");
+//         Warnings.forEach((warning, i) => console.log(`Warning ${i + 1}: ${warning}`));
+//     }
+// }
+
 
 const port = 5100;
 app.listen(port, console.log("Listening on port " + port + "..."))
