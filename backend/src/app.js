@@ -47,10 +47,45 @@ app.post("/login", async (req, res) => {
 // Registration
 app.post("/registration", async (req, res) => {
 
-    const data = req.body;
 
     // console.log("Received Registration1 Data: " + data.fname + " " + data.lname + " " + data.email + " " + data.password)
-    console.log("Received Data: ", data.courses.scores)
+    const data = req.body;
+    console.log("Received Data: ", data)
+
+    const jsonData = JSON.stringify(data.courses[0].scores);
+
+    let options = {
+        mode: "text",
+        pythonOptions: ["-u"],
+        scriptPath: "../python-scripts",
+    };
+
+    try {
+        const pyshell = new PythonShell("test.py", options);
+
+        // Send input to Python
+        pyshell.send(jsonData);
+
+        // Wait for Python output
+        const output = await new Promise((resolve, reject) => {
+            let result = "";
+
+            pyshell.on("message", (message) => (result += message));
+            pyshell.on("error", reject);
+            pyshell.end((err) => (err ? reject(err) : resolve(result)));
+        });
+
+        // Parse and send the response
+        const result = JSON.parse(output);
+        console.log("Python Output:", result.predicted_time_slot);
+        res.json(result);
+
+    } catch (err) {
+        console.error("Python Error:", err);
+        res.status(500).json({ error: "Python execution failed", details: err.message });
+    }
+
+    /////////////////////////////////////////////////////////
 
 
     if (!data) {
@@ -84,41 +119,42 @@ app.post("/registration", async (req, res) => {
             }
 
             const createdCourseRef = await addDoc(coursesCollectionRef, {
-                courseName : course.courseName,
-                cmca :{
-                    analysis : course.scores.Analysis,
-                    computation : course.scores.Computation,
-                    creativity : course.scores.Creativity,
-                    memorization : course.scores.Memorization
+                courseName: course.courseName,
+                cmca: {
+                    analysis: course.scores.Analysis,
+                    computation: course.scores.Computation,
+                    creativity: course.scores.Creativity,
+                    memorization: course.scores.Memorization
                 },
-                exam_date : {
-                    hour : course.examDate.hour,
-                    day : course.examDate.day
-                } ,
-                LecturesAndSectionsTimeslots : lecturesAndSectionsTimeslots,
+                exam_date: {
+                    hour: course.examDate.hour,
+                    day: course.examDate.day
+                },
+                LecturesAndSectionsTimeslots: lecturesAndSectionsTimeslots,
             });
-            
-            
-            CoursesRef.push(createdCourseRef.id)
-            
-        }} 
-        catch (err) {
-            return res.status(500).json({ error: "Couldn't add courses to the database" });
-        } 
 
-        // Add Student to the database with his courses references
-        try{
+
+            CoursesRef.push(createdCourseRef.id)
+
+        }
+    }
+    catch (err) {
+        return res.status(500).json({ error: "Couldn't add courses to the database" });
+    }
+
+    // Add Student to the database with his courses references
+    try {
         const createdStudentRef = await addDoc(studentsCollectionRef, {
             fname: data.fname,
             lname: data.lname,
             email: data.email,
-                password: data.password,
-                cgpa : data.cgpa,
-                sleeping_time : data.sleepingHours,
-                courses : CoursesRef,
-                study_hours : 0,
-                weekly_report : null,
-                timetable : null
+            password: data.password,
+            cgpa: data.cgpa,
+            sleeping_time: data.sleepingHours,
+            courses: CoursesRef,
+            study_hours: 0,
+            weekly_report: null,
+            timetable: null
         })
         const createdStudent = await getDoc(createdStudentRef);
 
@@ -128,7 +164,7 @@ app.post("/registration", async (req, res) => {
             res.status(404).json({ error: "Document not found" });
         }
 
-        }catch(err){
+    } catch (err) {
         return res.status(500).json({ error: err });
     }
 })
