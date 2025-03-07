@@ -15,7 +15,7 @@ function Registration() {
 
     try {
       const response = await axios.post(
-        "http://localhost:5100/registration",
+        "http://localhost:5100/auth/register",
         createdUser
       );
       console.log(response.data);

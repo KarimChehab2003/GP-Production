@@ -23,7 +23,10 @@ function SignIn({ setCurrentUser }) {
     console.log(user);
 
     try {
-      const response = await axios.post("http://localhost:5100/login", user);
+      const response = await axios.post(
+        "http://localhost:5100/auth/login",
+        user
+      );
       console.log(response.data);
     } catch (error) {
       console.error(error);
