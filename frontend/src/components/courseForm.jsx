@@ -114,15 +114,24 @@ const CourseForm = ({
             {/* Exam Date */}
             <div>
               <label className="block font-medium">Exam Day:</label>
-              <input
-                type="text"
+              <select
                 value={course.examDate.day}
                 onChange={(e) =>
                   handleExamDateChange(index, "day", e.target.value)
                 }
                 className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
-                placeholder="e.g., Monday"
-              />
+              >
+                <option value="" hidden>
+                  Select a day
+                </option>
+                <option value="Sunday">Sunday</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+              </select>
             </div>
 
             {/* Exam Time */}
@@ -138,7 +147,7 @@ const CourseForm = ({
               />
             </div>
           </div>
-          {/* CMCA Ratings (Full Width) */}
+          {/* CMCA Ratings */}
           <h4 className="font-semibold mt-3">Rate Each Criterion</h4>
           {criteria.map((criterion) => (
             <div key={criterion} className="mb-3">
@@ -200,8 +209,7 @@ const CourseForm = ({
               {/* Day Input */}
               <div>
                 <label className="block font-medium">Day:</label>
-                <input
-                  type="text"
+                <select
                   value={slot.day}
                   onChange={(e) =>
                     handleTimeSlotChange(
@@ -212,15 +220,24 @@ const CourseForm = ({
                     )
                   }
                   className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
-                  placeholder="e.g., Wednesday"
-                />
+                >
+                  <option value="" hidden>
+                    Select a day
+                  </option>
+                  <option value="Sunday">Sunday</option>
+                  <option value="Monday">Monday</option>
+                  <option value="Tuesday">Tuesday</option>
+                  <option value="Wednesday">Wednesday</option>
+                  <option value="Thursday">Thursday</option>
+                  <option value="Friday">Friday</option>
+                  <option value="Saturday">Saturday</option>
+                </select>
               </div>
 
               {/* Timeslot Input */}
               <div>
                 <label className="block font-medium">Timeslot:</label>
-                <input
-                  type="text"
+                <select
                   value={slot.timeslot}
                   onChange={(e) =>
                     handleTimeSlotChange(
@@ -231,8 +248,17 @@ const CourseForm = ({
                     )
                   }
                   className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
-                  placeholder="e.g., Session 3"
-                />
+                >
+                  <option value="">Select a time slot</option>
+                  <option value="8AM-10AM">8AM - 10AM</option>
+                  <option value="10AM-12PM">10AM - 12PM</option>
+                  <option value="12PM-2PM">12PM - 2PM</option>
+                  <option value="2PM-4PM">2PM - 4PM</option>
+                  <option value="4PM-6PM">4PM - 6PM</option>
+                  <option value="6PM-8PM">6PM - 8PM</option>
+                  <option value="8PM-10PM">8PM - 10PM</option>
+                  <option value="10PM-12AM">10PM - 12AM</option>
+                </select>
               </div>
 
               {/* Remove Button (aligned to the right) */}

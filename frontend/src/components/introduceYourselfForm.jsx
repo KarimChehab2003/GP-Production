@@ -1,9 +1,36 @@
+import { useState } from "react";
+
 const IntroduceYourselfForm = ({
   createdUser,
   setCreatedUser,
   handleNext,
   handlePrevious,
 }) => {
+  const [hasExtracurricular, setHasExtracurricular] = useState(false);
+  const [extracurricularActivities, setExtracurricularActivities] = useState(
+    {}
+  );
+
+  const handleAddActivity = () => {
+    setExtracurricularActivities([
+      ...extracurricularActivities,
+      { name: "", day: "", time: "" },
+    ]);
+  };
+
+  const handleActivityChange = (index, key, value) => {
+    const updatedActivities = extracurricularActivities.map((activity, i) =>
+      i === index ? { ...activity, [key]: value } : activity
+    );
+
+    setExtracurricularActivities(updatedActivities);
+    setCreatedUser((prevState) => ({
+      ...prevState,
+      extracurricularActivities: updatedActivities,
+    }));
+    // console.log(extracurricularActivities);
+  };
+
   return (
     <div className="max-w-xl w-full bg-white mx-4 p-6 rounded-md shadow-xl sm:my-10">
       <h2 className="text-2xl font-bold text-center capitalize">
@@ -100,12 +127,21 @@ const IntroduceYourselfForm = ({
               </label>
               <select
                 className="mt-1 w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500 transition-color duration-300"
-                onChange={(e) =>
-                  setCreatedUser((prevState) => ({
-                    ...prevState,
-                    extracurricularActivities: e.target.value,
-                  }))
-                }
+                value={hasExtracurricular ? "Yes" : "No"}
+                onChange={(e) => {
+                  setHasExtracurricular(e.target.value === "Yes");
+                  if (e.target.value === "Yes") {
+                    setExtracurricularActivities([
+                      { name: "", day: "", time: "" },
+                    ]);
+                  } else {
+                    setExtracurricularActivities([]);
+                    setCreatedUser((prevState) => ({
+                      ...prevState,
+                      extracurricularActivities: [],
+                    }));
+                  }
+                }}
               >
                 <option value="" hidden>
                   Select
@@ -114,6 +150,69 @@ const IntroduceYourselfForm = ({
                 <option value="No">No</option>
               </select>
             </div>
+
+            {/* Activity Fields */}
+            {hasExtracurricular && (
+              <div className="mt-4">
+                {extracurricularActivities.map((activity, index) => (
+                  <div key={index} className="flex flex-col gap-2 mb-4">
+                    <input
+                      type="text"
+                      value={activity.name}
+                      placeholder="Enter activity name"
+                      className="w-full p-2 border border-gray-300 rounded-lg"
+                      onChange={(e) =>
+                        handleActivityChange(index, "name", e.target.value)
+                      }
+                    />
+                    <select
+                      value={activity.day}
+                      onChange={(e) =>
+                        handleActivityChange(index, "day", e.target.value)
+                      }
+                      className="w-full p-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="" hidden>
+                        Select a day
+                      </option>
+                      <option value="Sunday">Sunday</option>
+                      <option value="Monday">Monday</option>
+                      <option value="Tuesday">Tuesday</option>
+                      <option value="Wednesday">Wednesday</option>
+                      <option value="Thursday">Thursday</option>
+                      <option value="Friday">Friday</option>
+                      <option value="Saturday">Saturday</option>
+                    </select>
+
+                    {/* Dropdown for time slots */}
+                    <select
+                      className="mt-1 w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500 transition-color duration-300"
+                      value={activity.time}
+                      onChange={(e) =>
+                        handleActivityChange(index, "time", e.target.value)
+                      }
+                    >
+                      <option value="">Select a time slot</option>
+                      <option value="8AM-10AM">8AM - 10AM</option>
+                      <option value="10AM-12PM">10AM - 12PM</option>
+                      <option value="12PM-2PM">12PM - 2PM</option>
+                      <option value="2PM-4PM">2PM - 4PM</option>
+                      <option value="4PM-6PM">4PM - 6PM</option>
+                      <option value="6PM-8PM">6PM - 8PM</option>
+                      <option value="8PM-10PM">8PM - 10PM</option>
+                      <option value="10PM-12AM">10PM - 12AM</option>
+                    </select>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="text-indigo-400 text-sm font-semibold mt-2"
+                  onClick={handleAddActivity}
+                >
+                  + Add Another Activity
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
