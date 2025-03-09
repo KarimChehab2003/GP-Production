@@ -10,6 +10,7 @@ const IntroduceYourselfForm = ({
   const [extracurricularActivities, setExtracurricularActivities] = useState(
     {}
   );
+  // const [features, setFeatures] = useState({});
 
   const handleAddActivity = () => {
     setExtracurricularActivities([
@@ -26,6 +27,7 @@ const IntroduceYourselfForm = ({
     setExtracurricularActivities(updatedActivities);
     setCreatedUser((prevState) => ({
       ...prevState,
+      takesCurricularActivities: hasExtracurricular ? "Yes" : "No",
       extracurricularActivities: updatedActivities,
     }));
     // console.log(extracurricularActivities);

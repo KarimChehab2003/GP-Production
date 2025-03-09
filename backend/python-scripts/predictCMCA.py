@@ -6,7 +6,7 @@ import os
 
 # Get absolute path of the current script
 current_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(current_dir, "xgboost.pkl")
+model_path = os.path.join(current_dir, "cmca_Model.pkl")
 
 # Load the trained AI model
 model = joblib.load(model_path)
