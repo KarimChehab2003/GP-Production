@@ -6,7 +6,7 @@ export const predictStudyHours = async (features) => {
     let options = {
         mode: "text",
         pythonOptions: ["-u"],
-        scriptPath: "./backend/python-scripts",
+        scriptPath: "./python-scripts",
     };
 
     return new Promise((resolve, reject) => {

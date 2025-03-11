@@ -1,13 +1,16 @@
 import { PythonShell } from "python-shell";
 
-export const predictCMCA = async (courses) => {
-    const jsonData = JSON.stringify(courses.map(course => course.scores));
+export const predictCMCA = async (courses, hoursPerWeek) => {
+    const jsonData = JSON.stringify(courses);
 
     let options = {
         mode: "text",
         pythonOptions: ["-u"],
-        scriptPath: "../python-scripts",
+        scriptPath: "./python-scripts",
+        args: [String(hoursPerWeek)]
     };
+
+    // console.log(courses);
 
     return new Promise((resolve, reject) => {
         const pyshell = new PythonShell("predictCMCA.py", options);

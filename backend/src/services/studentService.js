@@ -2,6 +2,10 @@ import { getDocs, addDoc, getDoc } from "firebase/firestore";
 import { studentsCollectionRef, coursesCollectionRef } from "../config/dbCollections.js";
 import { predictCMCA } from "./cmcaService.js";
 import { predictStudyHours } from "./studyHoursService.js";
+import formatCollegeData from "./helperFunctions/formatCollegeData.js";
+import formatCurricularData from "./helperFunctions/formatCurricularData.js";
+import generateSchedule from "./generateSchedule.js";
+import { createStudySchedule } from "./createStudySchedule.js";
 
 // Register New Student
 export const registerNewStudent = async (data) => {
@@ -26,9 +30,12 @@ export const registerNewStudent = async (data) => {
         courseRefs.push(createdCourseRef.id);
     }
 
-    // Predict timeslot for course
-    const timeslotPrediction = await predictCMCA(data.courses);
-    console.log("CMCA Predicted Timeslot:", timeslotPrediction)
+    // console.log(data.courses);
+
+    // Create the study schedule
+    const { schedule, Warnings } = await createStudySchedule(data);
+    printSchedule(schedule);
+    console.log(Warnings);
 
 
 
@@ -45,44 +52,20 @@ export const registerNewStudent = async (data) => {
     return { id: studentRef.id, ...studentDoc.data() };
 };
 
-const encodeStudentData = (studentData) => {
-    const encodingMap = {
-        "Access to Resources": { "High": 0, "Medium": 2, "Low": 1 },
-        "Extracurricular Activities": { "No": 0, "Yes": 1 },
-        "Parental Education Level": { "High School": 1, "college": 0, "Postgraduate": 2 },
-        "Distance from Home": { "Near": 2, "Moderate": 1, "Far": 0 }
-    };
 
-    return {
-        "Access_to_Resources": encodingMap["Access to Resources"][studentData.accessToResources] ?? null,
-        "Extracurricular_Activities": encodingMap["Extracurricular Activities"][studentData.takesCurricularActivities] ?? null,
-        "Sleep_Hours": studentData.sleepingHours,
-        "Previous_Scores": studentData.previousTermGPA ? (parseFloat(studentData.previousTermGPA) * 100) / 4 : null,
-        "Tutoring_Sessions": studentData.tutoringSessions,
-        "Parental_Education_Level": encodingMap["Parental Education Level"][studentData.parentalEducationLevel] ?? null,
-        "Distance_from_Home": encodingMap["Distance from Home"][studentData.distanceFromHome] ?? null,
-        "Exam_Score": studentData.cgpa ? (parseFloat(studentData.cgpa) * 100) / 4 : null
-    };
-};
+function printSchedule(schedule) {
+    const days = Object.keys(schedule);
+    const timeSlots = Object.keys(schedule[days[0]]);
+    const colWidth = 15; // Increase column width for better spacing
 
-const test = async () => {
-    const studentData = {
-        accessToResources: "High",
-        takesCurricularActivities: "Yes",
-        sleepingHours: 8,
-        previousTermGPA: "3.80",
-        tutoringSessions: 0,
-        parentalEducationLevel: "Postgraduate",
-        distanceFromHome: "Near",
-        cgpa: "3.50"
-    };
+    console.log("\nGenerated Schedule:\n");
 
-    const formattedData = encodeStudentData(studentData);
+    // Print header row with more spacing
+    console.log("".padEnd(colWidth) + days.map(day => day.padEnd(colWidth)).join(""));
+    console.log("-".repeat(colWidth + days.length * colWidth));
 
-    console.log(formattedData);
-    const result = await predictStudyHours(formattedData);
-    console.log(result)
-
-};
-
-test();
+    // Print each time slot row
+    timeSlots.forEach(slot => {
+        console.log(slot.padEnd(colWidth) + days.map(day => (schedule[day][slot] || "-").padEnd(colWidth)).join(""));
+    });
+}

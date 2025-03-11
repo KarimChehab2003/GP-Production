@@ -13,11 +13,11 @@ model = joblib.load(model_path)
 
 # Mapping predicted score index to study time range
 study_time_mapping = {
-    0: "0-5 hours",
-    1: "6-10 hours",
-    2: "11-15 hours",
-    3: "16-20 hours",
-    4: "21+ hours"
+    0: 5,
+    1: 10,
+    2: 15,
+    3: 20,
+    4: 21
 }
 
 def predict_exam_score(input_json):
@@ -48,10 +48,12 @@ def predict_exam_score(input_json):
     # Get study time range from mapping
     study_time_range = study_time_mapping.get(predicted_score, "Unknown range")
 
-    return json.dumps({
-        "Predicted Study Time Score": predicted_score,
-        "Study Time Range": study_time_range
-    })
+    # return json.dumps({
+    #     "Predicted Study Time Score": predicted_score,
+    #     "Study Time Range": study_time_range
+    # })
+
+    return study_time_range
 
 if __name__ == "__main__":
     input_json = sys.stdin.read().strip()

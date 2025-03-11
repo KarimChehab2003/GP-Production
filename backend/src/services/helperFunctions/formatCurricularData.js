@@ -1,6 +1,6 @@
-export default function formatCurricularData(data) {
+export default function formatCurricularData(extracurricularActivities) {
     let activitySchedule = {}
-    data.extracurricularActivities.forEach(entry => {
+    extracurricularActivities.forEach(entry => {
         let { day, name, time } = entry;
 
         if (!activitySchedule[name]) {
@@ -19,5 +19,5 @@ export default function formatCurricularData(data) {
 //     ]
 // };
 
-// let formattedData = formatFirestoreData(course);
+// let formattedData = formatCurricularData(data);
 // console.log(formattedData);

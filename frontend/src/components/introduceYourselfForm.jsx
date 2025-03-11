@@ -112,7 +112,7 @@ const IntroduceYourselfForm = ({
                 Number of Tutoring Sessions:
               </label>
               <input
-                type="text"
+                type="number"
                 value={createdUser.tutoringSessions}
                 className="mt-1 w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500 transition-color duration-300"
                 onChange={(e) =>
@@ -250,7 +250,7 @@ const IntroduceYourselfForm = ({
                 Your average sleep hours?
               </label>
               <input
-                type="text"
+                type="number"
                 value={createdUser.sleepingHours}
                 className="mt-1 w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500 transition-color duration-300"
                 onChange={(e) =>

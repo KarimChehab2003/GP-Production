@@ -1,9 +1,10 @@
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const timeSlots = ["8AM-10AM", "10AM-12PM", "12PM-2PM", "2PM-4PM", "4PM-6PM", "6PM-8PM", "8PM-10PM"];
-let Warnings = [];
+
 
 export default function generateSchedule(collegeSchedule, externalActivities, courses) {
     let schedule = {};
+    let Warnings = []; // Reset warnings on each function call
 
     // Initializing the schedule to be empty
     days.forEach(day => {
@@ -21,7 +22,7 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
                     schedule[day][slot] = collegeSchedule[day][slot];
                 } else {
                     Warnings.push("Couldn't map college schedule due to conflict in Lecs and Sections");
-                    return {};
+                    return { schedule: {}, Warnings };
                 }
             }
         }
@@ -99,8 +100,6 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
             Warnings.push(`Could not place all ${sessionsRequired} sessions for ${course}. Only ${sessionsPlaced} placed.`);
         }
     }
-    console.log(schedule)
-    return schedule;
+
+    return { schedule, Warnings };
 }
-
-
