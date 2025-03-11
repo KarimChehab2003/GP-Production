@@ -32,7 +32,7 @@ def predict_time_slot(input_json, hours_per_week):
     if num_courses == 0:
         return json.dumps({"error": "No courses provided"})
 
-    study_sessions_per_course = max(1, hours_per_week // num_courses)  # Ensure at least 1 session per course
+    study_sessions_per_course = max(1, round((hours_per_week / 2) / num_courses))  # Ensure at least 1 session per course
     predictions = {}
 
     for course in input_data["courses"]:
