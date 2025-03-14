@@ -11,18 +11,21 @@ export const createStudySchedule = async (studentData) => {
     // Predict study hours
     const formattedFeatures = encodeStudentData(studentData);
     const studyHoursPrediction = await predictStudyHours(formattedFeatures);
+    console.log("Predicted Study Hours: ", studyHoursPrediction);
 
     // Predict optimal time slots
     const timeslotPrediction = await predictCMCA(studentData, studyHoursPrediction);
+    console.log("Timeslot Predictions: ", timeslotPrediction);
 
     // Get college schedule
     const collegeSchedule = formatCollegeData(studentData.courses);
+    console.log("College schedule: ", collegeSchedule);
 
     // Get extracurricular activities schedule
     const activitiesSchedule = formatCurricularData(studentData.extracurricularActivities);
-
+    console.log("Activities schedule: ", activitiesSchedule);
     // Generate schedule
-    return generateSchedule(collegeSchedule, activitiesSchedule, timeslotPrediction);
+    return { studyPlan: generateSchedule(collegeSchedule, activitiesSchedule, timeslotPrediction), studyHours: studyHoursPrediction }
 };
 
 

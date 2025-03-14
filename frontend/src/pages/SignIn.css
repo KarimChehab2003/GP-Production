@@ -23,7 +23,6 @@ Colors: rgb(60, 66, 87)
   /* font-family: "Inter", sans-serif; <-- I imported it into the index.css so its used globally now */
   font-weight: 400;
   line-height: 1.6;
-  font-size: 62.5%;
 
   /* New addition to center it */
   display: flex;
@@ -35,13 +34,13 @@ Colors: rgb(60, 66, 87)
 }
 
 .container {
-  width: 120rem;
+  width: 75em;
   margin: auto;
-  padding: 1.6rem;
+  padding: 1rem;
 }
 
 .logo {
-  font-size: 2.4rem;
+  font-size: 1.5rem;
   color: #fff;
   font-weight: 600;
 }
@@ -105,24 +104,24 @@ Colors: rgb(60, 66, 87)
 
 .sign-in-form {
   /* margin-top: 10rem; <-- This caused it not to be centered */
-  padding: 6rem;
+  padding: 3.75rem;
   border: none;
   border-radius: 11px;
   background-color: #fff;
-  width: 60rem;
-  box-shadow: 0 2rem 2.4rem rgba(0, 0, 0, 0.2);
+  width: 37.5rem;
+  box-shadow: 0 1.25rem 1.5rem rgba(0, 0, 0, 0.2);
 }
 
 .sign-text {
-  font-size: 2.4rem;
-  margin-bottom: 4rem;
+  font-size: 1.5rem;
+  margin-bottom: 2.5rem;
   font-weight: 700;
 }
 
 .form-label {
   display: block;
-  margin-bottom: 2rem;
-  font-size: 1.4rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
@@ -130,11 +129,11 @@ Colors: rgb(60, 66, 87)
   display: flex;
   justify-content: space-between;
   width: 100%;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .forget-container span {
-  font-size: 1.4rem;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
@@ -146,15 +145,15 @@ Colors: rgb(60, 66, 87)
   width: 100%;
   margin-bottom: 2rem;
   border: 1px solid rgba(0, 0, 0, 0.15);
-  height: 4rem;
+  height: 2.5rem;
   border-radius: 7px;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .remember-me {
   display: flex;
   align-items: center;
-  margin: 1rem 0 5rem 0;
+  margin: 0.625rem 0 3.125rem 0;
 }
 
 .check-form-label {
@@ -166,13 +165,13 @@ Colors: rgb(60, 66, 87)
   cursor: pointer;
   position: relative;
   vertical-align: middle;
-  margin-right: 1rem;
+  margin-right: 0.625rem;
   transition: all 0.3s;
 }
 
 .forgot-password {
   text-decoration: none;
-  font-size: 1.4rem;
+  font-size: 0.875rem;
   position: relative;
   color: #4c6ef5;
 }
@@ -213,20 +212,20 @@ input[type="checkbox"].check-form-label:checked::after {
 }
 
 .remember-me-text {
-  font-size: 1.2rem;
+  font-size: 0.75rem;
 }
 
 .btn {
   text-align: center;
-  font-size: 1.6rem;
+  font-size: 1rem;
   display: block;
   width: 100%;
   border: none;
   background-color: #4c6ef5;
   color: #fff;
-  padding: 1.6rem 0;
+  padding: 1rem 0;
   border-radius: 7px;
-  margin-bottom: 5rem;
+  margin-bottom: 3.125rem;
   text-decoration: none;
 }
 
@@ -236,7 +235,7 @@ input[type="checkbox"].check-form-label:checked::after {
 
 .new-to-aspg {
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 0.75rem;
 }
 
 .go-to-reg {

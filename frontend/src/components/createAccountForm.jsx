@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
+
 function CreateAccountForm({ createdUser, setCreatedUser, handleNext }) {
+  const navigate = useNavigate();
   return (
     <div className="max-w-md w-full px-12 py-5 rounded-md shadow-xl bg-white">
       <div className="flex flex-col justify-between items-start space-y-10">
@@ -76,7 +79,10 @@ function CreateAccountForm({ createdUser, setCreatedUser, handleNext }) {
 
         <p className="mx-auto text-sm font-medium charcoal">
           Already have an account ?{" "}
-          <span className="text-indigo-500 cursor-pointer hover:text-indigo-300 transition">
+          <span
+            className="text-indigo-500 cursor-pointer hover:text-indigo-300 transition"
+            onClick={() => navigate("/login")}
+          >
             Sign In
           </span>
         </p>

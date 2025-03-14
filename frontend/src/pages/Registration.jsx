@@ -3,10 +3,12 @@ import { useState } from "react";
 import IntroduceYourselfForm from "../components/introduceYourselfForm";
 import CreateAccountForm from "../components/createAccountForm";
 import CourseForm from "../components/courseForm";
+import { useNavigate } from "react-router-dom";
 
-function Registration() {
+function Registration({ setCurrentUser }) {
   const [createdUser, setCreatedUser] = useState({});
   const [step, setStep] = useState(1);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +20,8 @@ function Registration() {
         "http://localhost:5100/auth/register",
         createdUser
       );
-      console.log(response.data);
+      setCreatedUser(response.data);
+      navigate("/dashboard");
     } catch (error) {
       console.error(error);
     }

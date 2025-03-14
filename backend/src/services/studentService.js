@@ -33,9 +33,10 @@ export const registerNewStudent = async (data) => {
     // console.log(data.courses);
 
     // Create the study schedule
-    const { schedule, Warnings } = await createStudySchedule(data);
-    printSchedule(schedule);
-    console.log(Warnings);
+    const { studyPlan, studyHours } = await createStudySchedule(data);
+    console.log(studyPlan)
+    // printSchedule(studyPlan.schedule);
+    // console.log(studyPlan.Warnings);
 
 
 
@@ -43,9 +44,9 @@ export const registerNewStudent = async (data) => {
     const studentRef = await addDoc(studentsCollectionRef, {
         ...data,
         courses: courseRefs,
-        study_hours: 0,
+        study_hours: studyHours,
         weekly_report: null,
-        timetable: null,
+        timetable: studyPlan
     });
 
     const studentDoc = await getDoc(studentRef);

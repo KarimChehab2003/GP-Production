@@ -1,10 +1,12 @@
 import axios from "axios";
 import { useState } from "react";
 import "./SignIn.css";
+import { useNavigate } from "react-router-dom";
 
 function SignIn({ setCurrentUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -20,14 +22,16 @@ function SignIn({ setCurrentUser }) {
       password: password,
     };
 
-    console.log(user);
+    // console.log(user);
 
     try {
       const response = await axios.post(
         "http://localhost:5100/auth/login",
         user
       );
-      console.log(response.data);
+      // console.log(response.data);
+      setCurrentUser(response.data);
+      navigate("/dashboard");
     } catch (error) {
       console.error(error);
     }
@@ -81,7 +85,7 @@ function SignIn({ setCurrentUser }) {
           </button>
           <p className="new-to-aspg">
             New to ASPG?{" "}
-            <a href="#" className="go-to-reg">
+            <a href="#" className="go-to-reg" onClick={() => navigate("/")}>
               Create account
             </a>
           </p>
