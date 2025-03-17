@@ -10,7 +10,7 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
     days.forEach(day => {
         schedule[day] = {};
         timeSlots.forEach(slot => {
-            schedule[day][slot] = "-";
+            schedule[day][slot] = "";
         });
     });
 
@@ -18,7 +18,7 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
     for (let day of days) {
         for (let slot of timeSlots) {
             if (collegeSchedule[day]?.[slot]) {
-                if (schedule[day][slot] === "-") {
+                if (schedule[day][slot] === "") {
                     schedule[day][slot] = collegeSchedule[day][slot];
                 } else {
                     Warnings.push("Couldn't map college schedule due to conflict in Lecs and Sections");
@@ -31,7 +31,7 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
     // Mapping external activities
     for (let activity in externalActivities) {
         let [day, preferredSlot] = externalActivities[activity];
-        if (schedule[day][preferredSlot] === "-") {
+        if (schedule[day][preferredSlot] === "") {
             schedule[day][preferredSlot] = activity;
         } else {
             let preferredIndex = timeSlots.indexOf(preferredSlot);
@@ -39,14 +39,14 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
 
             // Find closest available slot
             for (let i = preferredIndex - 1; i >= 0; i--) {
-                if (schedule[day][timeSlots[i]] === "-") {
+                if (schedule[day][timeSlots[i]] === "") {
                     closestIndex = i;
                     break;
                 }
             }
             if (closestIndex === -1) {
                 for (let i = preferredIndex + 1; i < timeSlots.length; i++) {
-                    if (schedule[day][timeSlots[i]] === "-") {
+                    if (schedule[day][timeSlots[i]] === "") {
                         closestIndex = i;
                         break;
                     }
@@ -68,7 +68,7 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
 
         for (let day of days) {
             if (sessionsPlaced >= sessionsRequired) break;
-            if (schedule[day][preferredSlot] === "-") {
+            if (schedule[day][preferredSlot] === "") {
                 schedule[day][preferredSlot] = `Study: ${course}`;
                 sessionsPlaced++;
             }
@@ -81,13 +81,13 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
             for (let offset = 1; offset < timeSlots.length; offset++) {
                 let before = preferredIndex - offset;
                 let after = preferredIndex + offset;
-                if (before >= 0 && schedule[day][timeSlots[before]] === "-") {
+                if (before >= 0 && schedule[day][timeSlots[before]] === "") {
                     schedule[day][timeSlots[before]] = `Study: ${course}`;
                     Warnings.push(`Moved Study: ${course} from ${preferredSlot} to ${timeSlots[before]} on ${day} due to conflicts.`);
                     sessionsPlaced++;
                     break;
                 }
-                if (after < timeSlots.length && schedule[day][timeSlots[after]] === "-") {
+                if (after < timeSlots.length && schedule[day][timeSlots[after]] === "") {
                     schedule[day][timeSlots[after]] = `Study: ${course}`;
                     Warnings.push(`Moved Study: ${course} from ${preferredSlot} to ${timeSlots[after]} on ${day} due to conflicts.`);
                     sessionsPlaced++;

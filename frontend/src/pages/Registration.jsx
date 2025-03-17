@@ -5,7 +5,7 @@ import CreateAccountForm from "../components/createAccountForm";
 import CourseForm from "../components/courseForm";
 import { useNavigate } from "react-router-dom";
 
-function Registration({ setCurrentUser }) {
+function Registration() {
   const [createdUser, setCreatedUser] = useState({});
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ function Registration({ setCurrentUser }) {
         "http://localhost:5100/auth/register",
         createdUser
       );
-      setCreatedUser(response.data);
+      localStorage.setItem("currentUser", JSON.stringify(response.data));
       navigate("/dashboard");
     } catch (error) {
       console.error(error);

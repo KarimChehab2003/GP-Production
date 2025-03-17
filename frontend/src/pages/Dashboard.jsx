@@ -1,5 +1,80 @@
+import { useEffect, useState } from "react";
+import { FaRegCalendarAlt, FaTasks, FaBell } from "react-icons/fa";
+import { IoIosSettings } from "react-icons/io";
+import { GoGraph } from "react-icons/go";
+import Calendar from "../components/Calendar";
+
 function Dashboard() {
-  return <div>This is the dashboard</div>;
+  const [date, setDate] = useState(new Date());
+  const [currentUser, setCurrentUser] = useState({});
+  useEffect(() => {
+    setDate(new Date());
+    setCurrentUser(JSON.parse(localStorage.getItem("currentUser")));
+  }, []);
+
+  // console.log(currentUser)
+  return (
+    <section className="min-h-screen flex flex-col">
+      {/* Navbar */}
+      <div className="bg-indigo-500 flex justify-between items-center text-white py-4 px-8">
+        <p className="text-2xl font-semibold">ASPG</p>
+        <div className="flex justify-center items-center space-x-4">
+          <p>Welcome, {currentUser.fname + " " + currentUser.lname}</p>
+          <FaBell />
+        </div>
+      </div>
+
+      {/* Dashboard Interface */}
+      <div className="flex w-full grow">
+        {/* Dashboard Nav */}
+        <div className="flex flex-col justify-between items-center p-6 border-2 border-indigo-500 ">
+          <div className="space-y-8">
+            <div className="flex flex-col justify-center items-center">
+              <p className="text-8xl font-bold text-indigo-500">
+                {date.getDate()}
+              </p>
+              <p className="text-2xl font-semibold capitalize">
+                {date.toLocaleDateString("en-US", { month: "long" }) +
+                  " " +
+                  date.getFullYear()}
+              </p>
+            </div>
+
+            <ul className="list-none space-y-4">
+              <li
+                className="flex items-center space-x-2 text-xl cursor-pointer focus:bg-indigo-500 focus:text-white rounded-md py-2 px-4 transition duration-300"
+                tabIndex={0}
+              >
+                <FaRegCalendarAlt />
+                <p>Study Plan</p>
+              </li>
+              <li
+                className="flex items-center space-x-2 text-xl cursor-pointer focus:bg-indigo-500 focus:text-white rounded-md py-2 px-4 transition duration-300"
+                tabIndex={0}
+              >
+                <FaTasks />
+                <p>Tasks</p>
+              </li>
+              <li
+                className="flex items-center space-x-2 text-xl cursor-pointer focus:bg-indigo-500 focus:text-white rounded-md py-2 px-4 transition duration-300"
+                tabIndex={0}
+              >
+                <GoGraph />
+                <p>Insights</p>
+              </li>
+            </ul>
+          </div>
+          <div className="flex justify-center items-center space-x-2 text-xl cursor-pointer">
+            <IoIosSettings />
+            <p>Settings</p>
+          </div>
+        </div>
+
+        {/* Calendar */}
+        <Calendar />
+      </div>
+    </section>
+  );
 }
 
 export default Dashboard;

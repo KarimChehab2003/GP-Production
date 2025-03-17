@@ -3,7 +3,7 @@ import { useState } from "react";
 import "./SignIn.css";
 import { useNavigate } from "react-router-dom";
 
-function SignIn({ setCurrentUser }) {
+function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ function SignIn({ setCurrentUser }) {
         user
       );
       // console.log(response.data);
-      setCurrentUser(response.data);
+      localStorage.setItem("currentUser", JSON.stringify(response.data));
       navigate("/dashboard");
     } catch (error) {
       console.error(error);
