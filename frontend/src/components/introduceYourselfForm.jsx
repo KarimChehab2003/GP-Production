@@ -15,7 +15,7 @@ const IntroduceYourselfForm = ({
   const handleAddActivity = () => {
     setExtracurricularActivities([
       ...extracurricularActivities,
-      { name: "", day: "", time: "" },
+      { name: "", day: "", time: "" , place: "" },
     ]);
   };
 
@@ -134,7 +134,7 @@ const IntroduceYourselfForm = ({
                   setHasExtracurricular(e.target.value === "Yes");
                   if (e.target.value === "Yes") {
                     setExtracurricularActivities([
-                      { name: "", day: "", time: "" },
+                      { name: "", day: "", time: "", place: "" },
                     ]);
                   } else {
                     setExtracurricularActivities([]);
@@ -204,6 +204,22 @@ const IntroduceYourselfForm = ({
                       <option value="8PM-10PM">8PM - 10PM</option>
                       <option value="10PM-12AM">10PM - 12AM</option>
                     </select>
+
+                    {/* Dropdown for activity place */}
+                    <select
+                      value={activity.place}
+                      onChange={(e) =>
+                        handleActivityChange(index, "place", e.target.value)
+                      }
+                      className="w-full p-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="" hidden>
+                        Select a location
+                      </option>
+                      <option value="Outdoor">Outdoor</option>
+                      <option value="Indoor">Indoor</option>
+                    </select>
+
                   </div>
                 ))}
                 <button
