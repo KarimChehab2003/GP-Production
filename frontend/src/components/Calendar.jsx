@@ -1,4 +1,5 @@
-import Timeslot from "./Timeslot";
+import Slot from "./Slot";
+import { useState } from "react";
 
 function Calendar() {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -48,18 +49,18 @@ function Calendar() {
     };
 
     const calendar = createCalendar();
-    console.log("Calendar:", calendar);
+    // console.log("Calendar:", calendar);
     // console.log("College Schedule:", collegeSchedule);
     // console.log("Updated Calendar:", calendar);
 
-    return <div className="grid grid-cols-8 grow">
+    return <div className="grid grid-cols-8">
         {
             calendar.map((row, i) =>
                 row.map((col, j) => {
-                    if (i == 0 && j == 0) return <Timeslot key={`${i}-${j}`} content={col} type={"default"} />
-                    if (i == 0) return <Timeslot key={`${i}-${j}`} content={col} type={"day"} />
-                    if (j == 0) return <Timeslot key={`${i}-${j}`} content={col} type={"timeslot"} />
-                    return <Timeslot key={`${i}-${j}`} content={col} type={"slot"} />
+                    if (i == 0 && j == 0) return <Slot key={`${i}-${j}`} content={col} type={"default"} />
+                    if (i == 0) return <Slot key={`${i}-${j}`} content={col} type={"day"} />
+                    if (j == 0) return <Slot key={`${i}-${j}`} content={col} type={"timeslot"} />
+                    return <Slot key={`${i}-${j}`} content={col} type={"slot"} />
                 })
             )
         }

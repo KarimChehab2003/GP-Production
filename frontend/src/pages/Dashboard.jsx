@@ -25,11 +25,12 @@ function Dashboard() {
       </div>
 
       {/* Dashboard Interface */}
-      <div className="flex w-full grow">
+      <div className="flex grow-1 space-x-4 p-4 ">
+
         {/* Dashboard Nav */}
-        <div className="flex flex-col justify-between items-center p-6 border-2 border-indigo-500 ">
+        <div className="flex flex-col justify-between items-center p-4 border-2 border-indigo-500 min-w-[200px] max-w-xs">
           <div className="space-y-8">
-            <div className="flex flex-col justify-center items-center">
+            <div className="flex flex-col justify-center items-center text-center">
               <p className="text-8xl font-bold text-indigo-500">
                 {date.getDate()}
               </p>
