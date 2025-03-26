@@ -1,7 +1,7 @@
 import { useState } from "react";
 import SlotModal from "./SlotModal";
 
-function Timeslot({ content, type }) {
+function Timeslot({ content, type, setTaskList }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const isDisabled = type !== "slot";
 
@@ -42,6 +42,7 @@ function Timeslot({ content, type }) {
                     onClose={handleCloseModal}
                     type={eventType}
                     subject={eventContent}
+                    setTaskList={setTaskList}
                 />
             )}
         </div>

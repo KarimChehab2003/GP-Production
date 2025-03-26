@@ -7,10 +7,16 @@ import Calendar from "../components/Calendar";
 function Dashboard() {
   const [date, setDate] = useState(new Date());
   const [currentUser, setCurrentUser] = useState({});
+  const [taskList, setTaskList] = useState([]);
+
   useEffect(() => {
     setDate(new Date());
     setCurrentUser(JSON.parse(localStorage.getItem("currentUser")));
   }, []);
+
+  useEffect(() => {
+    console.log(taskList);
+  }, [taskList])
 
   // console.log(currentUser)
   return (
@@ -26,7 +32,6 @@ function Dashboard() {
 
       {/* Dashboard Interface */}
       <div className="flex grow-1 space-x-4 p-4 ">
-
         {/* Dashboard Nav */}
         <div className="flex flex-col justify-between items-center p-4 border-2 border-indigo-500 min-w-[200px] max-w-xs">
           <div className="space-y-8">
@@ -72,7 +77,7 @@ function Dashboard() {
         </div>
 
         {/* Calendar */}
-        <Calendar />
+        <Calendar setTaskList={setTaskList} />
       </div>
     </section>
   );

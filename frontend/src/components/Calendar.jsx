@@ -1,7 +1,7 @@
 import Slot from "./Slot";
 import { useState } from "react";
 
-function Calendar() {
+function Calendar({ setTaskList }) {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const timeslots = [
         "8AM-10AM",
@@ -60,7 +60,7 @@ function Calendar() {
                     if (i == 0 && j == 0) return <Slot key={`${i}-${j}`} content={col} type={"default"} />
                     if (i == 0) return <Slot key={`${i}-${j}`} content={col} type={"day"} />
                     if (j == 0) return <Slot key={`${i}-${j}`} content={col} type={"timeslot"} />
-                    return <Slot key={`${i}-${j}`} content={col} type={"slot"} />
+                    return <Slot key={`${i}-${j}`} content={col} type={"slot"} setTaskList={setTaskList} />
                 })
             )
         }
