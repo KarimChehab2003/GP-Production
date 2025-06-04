@@ -11,7 +11,7 @@ export const createStudySchedule = async (studentData) => {
     // Predict study hours
     const formattedFeatures = encodeStudentData(studentData);
     const studyHoursPrediction = await predictStudyHours(formattedFeatures);
-    console.log("Predicted Study Hours: ", studyHoursPrediction);
+    console.log("//////////////////////// Predicted Study Hours: ", studyHoursPrediction);
 
     // Predict optimal time slots
     const timeslotPrediction = await predictCMCA(studentData, studyHoursPrediction);

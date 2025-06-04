@@ -16,7 +16,7 @@ function Dashboard() {
 
   useEffect(() => {
     console.log(taskList);
-  }, [taskList])
+  }, [taskList]);
 
   // console.log(currentUser)
   return (
