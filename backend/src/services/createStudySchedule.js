@@ -25,7 +25,8 @@ export const createStudySchedule = async (studentData) => {
     const activitiesSchedule = formatCurricularData(studentData.extracurricularActivities);
     console.log("Activities schedule: ", activitiesSchedule);
     // Generate schedule
-    return { studyPlan: generateSchedule(collegeSchedule, activitiesSchedule, timeslotPrediction), studyHours: studyHoursPrediction }
+    const studyPlan = await generateSchedule(collegeSchedule, activitiesSchedule, timeslotPrediction);
+    return { studyPlan, studyHours: studyHoursPrediction }
 };
 
 

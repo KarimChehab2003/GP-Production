@@ -202,7 +202,6 @@ const IntroduceYourselfForm = ({
                       <option value="4PM-6PM">4PM - 6PM</option>
                       <option value="6PM-8PM">6PM - 8PM</option>
                       <option value="8PM-10PM">8PM - 10PM</option>
-                      <option value="10PM-12AM">10PM - 12AM</option>
                     </select>
 
                     {/* Dropdown for activity place */}

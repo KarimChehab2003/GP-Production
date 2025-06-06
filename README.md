@@ -11,7 +11,8 @@ Follow these steps to set up both the backend and frontend of the project.
 3. Run the following commands:
    ```sh
    npm install
-   node ./app.js
+   python -m pip install -r python-scripts/CP/requirements.txt
+   node src/server.js
 
 ## 📌 Frontend Setup
 

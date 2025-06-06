@@ -22,14 +22,14 @@ export default function formatCollegeData(courses) {
 // let courses = [
 //     {
 //         courseName: "QA",
-//         LecturesAndSectionsTimeslots: [
+//         timeSlots: [
 //             { day: "Sunday", timeslot: "10AM-12PM", type: "Lecture" },
 //             { day: "Sunday", timeslot: "8AM-10AM", type: "Section" }
 //         ]
 //     },
 //     {
 //         courseName: "UID",
-//         LecturesAndSectionsTimeslots: [
+//         timeSlots: [
 //             { day: "Sunday", timeslot: "12PM-2PM", type: "Lecture" },
 //             { day: "Sunday", timeslot: "2PM-4PM", type: "Section" }
 //         ]

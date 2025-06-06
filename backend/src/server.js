@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-// import studentRoutes from "./routes/studentRoutes.js"; 
 import authRoutes from "./routes/authRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 

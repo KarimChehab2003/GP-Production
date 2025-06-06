@@ -35,9 +35,7 @@ export const registerNewStudent = async (data) => {
     // Create the study schedule
     const { studyPlan, studyHours } = await createStudySchedule(data);
     console.log(studyPlan)
-    // printSchedule(studyPlan.schedule);
     // console.log(studyPlan.Warnings);
-
 
 
     // Add student
@@ -52,21 +50,3 @@ export const registerNewStudent = async (data) => {
     const studentDoc = await getDoc(studentRef);
     return { id: studentRef.id, ...studentDoc.data() };
 };
-
-
-function printSchedule(schedule) {
-    const days = Object.keys(schedule);
-    const timeSlots = Object.keys(schedule[days[0]]);
-    const colWidth = 15; // Increase column width for better spacing
-
-    console.log("\nGenerated Schedule:\n");
-
-    // Print header row with more spacing
-    console.log("".padEnd(colWidth) + days.map(day => day.padEnd(colWidth)).join(""));
-    console.log("-".repeat(colWidth + days.length * colWidth));
-
-    // Print each time slot row
-    timeSlots.forEach(slot => {
-        console.log(slot.padEnd(colWidth) + days.map(day => (schedule[day][slot] || "-").padEnd(colWidth)).join(""));
-    });
-}
