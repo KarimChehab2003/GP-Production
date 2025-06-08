@@ -12,7 +12,8 @@ Follow these steps to set up both the backend and frontend of the project.
    ```sh
    npm install
    python -m pip install -r python-scripts/CP/requirements.txt
-   node src/server.js
+   npx nodemon ./src/server.js
+   ```
 
 ## 📌 Frontend Setup
 
@@ -22,3 +23,4 @@ Follow these steps to set up both the backend and frontend of the project.
    ```sh
    npm install
    npm run dev
+   ```

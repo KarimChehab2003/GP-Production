@@ -57,28 +57,74 @@ function Calendar({ setTaskList }) {
   };
 
   const calendar = createCalendar();
-  // console.log("Calendar:", calendar);
-  // console.log("College Schedule:", collegeSchedule);
-  // console.log("Updated Calendar:", calendar);
+  const currentDayName = days[new Date().getDay()];
 
   return (
     <div className="grid grid-cols-8">
       {calendar.map((row, i) =>
         row.map((col, j) => {
-          if (i == 0 && j == 0)
-            return <Slot key={`${i}-${j}`} content={col} type={"default"} />;
-          if (i == 0)
-            return <Slot key={`${i}-${j}`} content={col} type={"day"} />;
-          if (j == 0)
-            return <Slot key={`${i}-${j}`} content={col} type={"timeslot"} />;
-          return (
-            <Slot
-              key={`${i}-${j}`}
-              content={col}
-              type={"slot"}
-              setTaskList={setTaskList}
-            />
-          );
+          let slotType = "default";
+          let isCurrentDay = false;
+          let sessionCategory = "empty";
+          let modalEventType = "";
+
+          if (i === 0 && j === 0) {
+            // Top-left empty corner
+            return <Slot key={`${i}-${j}`} content={col} type={slotType} />;
+          } else if (i === 0) {
+            // Day headers
+            slotType = "day";
+            isCurrentDay = col === currentDayName;
+            return (
+              <Slot
+                key={`${i}-${j}`}
+                content={col}
+                type={slotType}
+                isCurrentDay={isCurrentDay}
+              />
+            );
+          } else if (j === 0) {
+            // Time slot headers
+            slotType = "timeslot";
+            return <Slot key={`${i}-${j}`} content={col} type={slotType} />;
+          } else {
+            // Schedule slots
+            slotType = "slot";
+            isCurrentDay = calendar[0][j] === currentDayName; // Check if current day for the column
+
+            const content = col;
+            if (content.startsWith("Study:")) {
+              sessionCategory = "study";
+              modalEventType = "Study";
+            } else if (content.startsWith("Lec:")) {
+              sessionCategory = "lecture";
+              modalEventType = "Lec";
+            } else if (content.startsWith("Sec:")) {
+              sessionCategory = "section";
+              modalEventType = "Sec";
+            } else if (content === "Break") {
+              sessionCategory = "break";
+              modalEventType = "";
+            } else if (content.startsWith("Quiz session for")) {
+              sessionCategory = "quizRetry";
+              modalEventType = "";
+            } else {
+              sessionCategory = "empty";
+              modalEventType = "";
+            }
+            return (
+              <Slot
+                key={`${i}-${j}`}
+                content={col}
+                type={slotType}
+                isCurrentDay={isCurrentDay}
+                sessionCategory={sessionCategory}
+                setTaskList={setTaskList}
+                modalEventType={modalEventType}
+                modalSubject={col}
+              />
+            );
+          }
         })
       )}
     </div>

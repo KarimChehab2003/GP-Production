@@ -8,6 +8,8 @@ function StudyForm({ eventType, subject, setFormDetails }) {
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentLectureNumber, setCurrentLectureNumber] = useState(null);
+  const [currentSessionNumber, setCurrentSessionNumber] = useState(1);
 
   const handleLectureChange = (index, field, value) => {
     setLectureDetails((prevDetails) => {
@@ -18,6 +20,10 @@ function StudyForm({ eventType, subject, setFormDetails }) {
       };
       return updatedDetails;
     });
+
+    if (field === "number") {
+      setCurrentLectureNumber(value);
+    }
   };
 
   const handleFileUpload = async (file, index) => {
@@ -31,7 +37,7 @@ function StudyForm({ eventType, subject, setFormDetails }) {
 
     try {
       const response = await axios.post(
-        "http://localhost:5100/api/upload",
+        "http://localhost:5100/api/quiz/upload",
         formData,
         {
           headers: {
@@ -83,6 +89,9 @@ function StudyForm({ eventType, subject, setFormDetails }) {
           onFileUpload={handleFileUpload}
           generatedQuiz={generatedQuiz?.[index]}
           isLoading={isLoading}
+          course={subject}
+          lectureNumber={currentLectureNumber}
+          sessionNumber={currentSessionNumber}
         />
       ))}
 
@@ -112,6 +121,9 @@ function LectureForm({
   onFileUpload,
   generatedQuiz,
   isLoading,
+  course,
+  lectureNumber,
+  sessionNumber,
 }) {
   return (
     <div className="flex flex-col space-y-4 mb-4 border border-gray-200 rounded-lg p-4">
@@ -175,7 +187,14 @@ function LectureForm({
         </div>
       )}
 
-      {generatedQuiz && <Quiz quiz={generatedQuiz} />}
+      {generatedQuiz && (
+        <Quiz
+          quiz={generatedQuiz}
+          course={course}
+          lectureNumber={lectureNumber}
+          sessionNumber={sessionNumber}
+        />
+      )}
     </div>
   );
 }

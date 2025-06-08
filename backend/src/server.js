@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -9,8 +10,8 @@ app.use(cors());
 
 // Modular routes
 app.use("/auth", authRoutes);
-app.use("/api", quizRoutes);
-
+app.use("/api/quiz", quizRoutes);
+app.use("/api/courses", courseRoutes);
 
 const port = 5100;
 app.listen(port, () => console.log(`Listening on port ${port}...`));
