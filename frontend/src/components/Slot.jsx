@@ -9,6 +9,10 @@ function Timeslot({
   sessionCategory,
   modalEventType,
   modalSubject,
+  modalLectureNumber,
+  modalDay,
+  modalTime,
+  onRemoveQuizSession,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isDisabled = type !== "slot";
@@ -57,6 +61,9 @@ function Timeslot({
           case "section":
             baseClasses += "bg-purple-500/20 "; // Light purple for sections
             break;
+          case "failedQuiz":
+            baseClasses += "bg-red-500/20 "; // Solid red for failed quizzes
+            break;
           default:
             break;
         }
@@ -95,6 +102,10 @@ function Timeslot({
           type={modalEventType}
           subject={modalSubject}
           setTaskList={setTaskList}
+          modalLectureNumber={modalLectureNumber}
+          modalDay={modalDay}
+          modalTime={modalTime}
+          onRemoveQuizSession={onRemoveQuizSession}
         />
       )}
     </div>

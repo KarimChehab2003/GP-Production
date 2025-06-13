@@ -1,8 +1,18 @@
 import { useState, useCallback } from "react";
 import LectureSectionForm from "./LectureSectionForm";
 import StudyForm from "./StudyForm";
+import RetryQuizForm from "./RetryQuizForm";
 
-function SlotModal({ onClose, type, subject, setTaskList }) {
+function SlotModal({
+  onClose,
+  type,
+  subject,
+  setTaskList,
+  modalLectureNumber,
+  modalDay,
+  modalTime,
+  onRemoveQuizSession,
+}) {
   const memoizedOnClose = useCallback(onClose, [onClose]);
   const eventType =
     type === "Lec"
@@ -11,6 +21,8 @@ function SlotModal({ onClose, type, subject, setTaskList }) {
       ? "section"
       : type === "Study"
       ? "study"
+      : type === "retryQuiz"
+      ? "retryQuiz"
       : "";
   const [formDetails, setFormDetails] = useState({
     subject: subject,
@@ -30,7 +42,7 @@ function SlotModal({ onClose, type, subject, setTaskList }) {
       >
         <button
           className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 transition duration-300 flex justify-center items-center text-xl text-white absolute -top-2 -right-2 shadow-lg"
-          onClick={onClose}
+          onClick={memoizedOnClose}
         >
           &times;
         </button>
@@ -53,7 +65,18 @@ function SlotModal({ onClose, type, subject, setTaskList }) {
           <StudyForm
             eventType={eventType}
             subject={subject}
-            onCloseModal={onClose}
+            onCloseModal={memoizedOnClose}
+            modalQuizLectureNumber={modalLectureNumber}
+          />
+        )}
+        {eventType === "retryQuiz" && (
+          <RetryQuizForm
+            subject={subject}
+            lectureNumber={modalLectureNumber}
+            onCloseModal={memoizedOnClose}
+            modalDay={modalDay}
+            modalTime={modalTime}
+            onRemoveQuizSession={onRemoveQuizSession}
           />
         )}
 

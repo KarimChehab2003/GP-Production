@@ -3,7 +3,12 @@ import axios from "axios";
 import LectureForm from "./LectureForm"; // Import LectureForm from its new file
 import React from "react";
 
-function StudyForm({ eventType, subject, onCloseModal }) {
+function StudyForm({
+  eventType,
+  subject,
+  onCloseModal,
+  modalQuizLectureNumber,
+}) {
   const [lectureCount, setLectureCount] = useState(1);
   const [lectureDetails, setLectureDetails] = useState([]);
   const [error, setError] = useState(null);
@@ -53,6 +58,14 @@ function StudyForm({ eventType, subject, onCloseModal }) {
     };
     fetchCourseData();
   }, [subject]);
+
+  useEffect(() => {
+    if (modalQuizLectureNumber && lectureDetails.length === 0) {
+      setLectureDetails([
+        { number: modalQuizLectureNumber, status: "", file: null, quiz: null },
+      ]);
+    }
+  }, [modalQuizLectureNumber, lectureDetails.length]);
 
   const handleLectureChange = useCallback((index, field, value) => {
     setLectureDetails((prevDetails) => {

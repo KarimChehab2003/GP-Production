@@ -1,5 +1,6 @@
 import Slot from "./Slot";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 
 function Calendar({ setTaskList }) {
   const days = [
@@ -60,6 +61,52 @@ function Calendar({ setTaskList }) {
     setCalendarData(createCalendar());
   }, [setTaskList]); // Depend on setTaskList, which should trigger when relevant data changes
 
+  const handleRemoveQuizSession = useCallback(
+    async (day, time, subject, lectureNumber) => {
+      try {
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        if (
+          !currentUser ||
+          !currentUser.timetable ||
+          !currentUser.timetable.schedule
+        ) {
+          console.error("Current user or timetable not found.");
+          return;
+        }
+
+        const updatedSchedule = { ...currentUser.timetable.schedule };
+        if (updatedSchedule[day] && updatedSchedule[day][time]) {
+          updatedSchedule[day][time] = ""; // Remove the session from the schedule
+        }
+
+        // Update local storage
+        localStorage.setItem(
+          "currentUser",
+          JSON.stringify({
+            ...currentUser,
+            timetable: { schedule: updatedSchedule },
+          })
+        );
+
+        // Update database
+        await axios.put("http://localhost:5100/api/quiz/update-user", {
+          userId: currentUser.id,
+          timetable: { schedule: updatedSchedule },
+        });
+
+        // Update calendar data to reflect removal
+        setCalendarData(createCalendar());
+        alert(
+          `Quiz session for ${subject} on lecture ${lectureNumber} removed successfully!`
+        );
+      } catch (error) {
+        console.error("Error removing quiz session:", error);
+        alert("Failed to remove quiz session.");
+      }
+    },
+    []
+  );
+
   const currentDayName = days[new Date().getDay()];
 
   return (
@@ -70,6 +117,10 @@ function Calendar({ setTaskList }) {
           let isCurrentDay = false;
           let sessionCategory = "empty";
           let modalEventType = "";
+          let modalSubject = "";
+          let modalLectureNumber = null;
+          let modalDay = days[j - 1]; // Current day for the slot
+          let modalTime = timeslots[i - 1]; // Current timeslot for the slot
 
           if (i === 0 && j === 0) {
             // Top-left empty corner
@@ -109,8 +160,15 @@ function Calendar({ setTaskList }) {
               sessionCategory = "break";
               modalEventType = "";
             } else if (content.startsWith("Quiz session for")) {
-              sessionCategory = "quizRetry";
-              modalEventType = "";
+              sessionCategory = "failedQuiz";
+              modalEventType = "retryQuiz";
+              const match = content.match(
+                /Quiz session for (.+) on lecture (\d+)/
+              );
+              if (match) {
+                modalSubject = match[1];
+                modalLectureNumber = parseInt(match[2]);
+              }
             } else {
               sessionCategory = "empty";
               modalEventType = "";
@@ -124,7 +182,11 @@ function Calendar({ setTaskList }) {
                 sessionCategory={sessionCategory}
                 setTaskList={setTaskList}
                 modalEventType={modalEventType}
-                modalSubject={col}
+                modalSubject={modalSubject}
+                modalLectureNumber={modalLectureNumber}
+                modalDay={modalDay}
+                modalTime={modalTime}
+                onRemoveQuizSession={handleRemoveQuizSession} // Pass the callback
               />
             );
           }

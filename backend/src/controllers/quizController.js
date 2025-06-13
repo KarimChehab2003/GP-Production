@@ -2,6 +2,7 @@ import { generateQuizFromFile } from "../services/generateQuizService.js";
 import { db } from "../config/adminFirebase.js";
 import { doc, updateDoc, addDoc, increment } from "firebase/firestore";
 import { learningObjectivesCollectionRef, studySessionsCollectionRef, evaluationCollectionRef, coursesCollectionRef } from "../config/dbCollections.js";
+import { query, where, getDocs } from "firebase/firestore";
 
 export async function uploadLecture(req, res) {
     if (!req.file) {
@@ -101,5 +102,35 @@ export async function updateUser(req, res) {
     } catch (error) {
         console.error("Error updating user:", error);
         res.status(500).send("Failed to update user");
+    }
+}
+
+export async function getQuizByLecture(req, res) {
+    try {
+        const { courseId, lectureNumber } = req.query;
+
+        if (!courseId || !lectureNumber) {
+            return res.status(400).send("Course ID and lecture number are required.");
+        }
+
+        const q = query(
+            evaluationCollectionRef,
+            where("course", "==", courseId),
+            where("lecture_number", "==", parseInt(lectureNumber))
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return res.status(404).send("Quiz not found for the given lecture and course.");
+        }
+
+        // Assuming there's only one evaluation per course/lecture for a given session
+        const quizDoc = querySnapshot.docs[0].data();
+
+        res.json({ quiz: quizDoc.quiz });
+    } catch (error) {
+        console.error("Error fetching quiz by lecture:", error);
+        res.status(500).send("Failed to fetch quiz.");
     }
 }
