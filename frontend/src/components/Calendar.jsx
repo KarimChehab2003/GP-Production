@@ -150,6 +150,7 @@ function Calendar({ setTaskList }) {
             if (content.startsWith("Study:")) {
               sessionCategory = "study";
               modalEventType = "Study";
+              modalSubject = content.replace(/^Study:\s*/, "").trim(); // Extract subject for study sessions
             } else if (content.startsWith("Lec:")) {
               sessionCategory = "lecture";
               modalEventType = "Lec";
