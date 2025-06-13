@@ -8,7 +8,7 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/upload', upload.single('lecture'), uploadLecture);
 router.post('/learning-objective', createLearningObjective);
 router.post('/study-session', createStudySession);
-router.post('/update-user', updateUser);
+router.put('/update-user', updateUser);
 router.post('/evaluation', createEvaluation);
 
 export default router; 

@@ -1,7 +1,7 @@
 import { generateQuizFromFile } from "../services/generateQuizService.js";
 import { db } from "../config/adminFirebase.js";
-import { doc, updateDoc, addDoc } from "firebase/firestore";
-import { learningObjectivesCollectionRef, studySessionsCollectionRef, evaluationCollectionRef } from "../config/dbCollections.js";
+import { doc, updateDoc, addDoc, increment } from "firebase/firestore";
+import { learningObjectivesCollectionRef, studySessionsCollectionRef, evaluationCollectionRef, coursesCollectionRef } from "../config/dbCollections.js";
 
 export async function uploadLecture(req, res) {
     if (!req.file) {
@@ -39,13 +39,20 @@ export async function createLearningObjective(req, res) {
 
 export async function createStudySession(req, res) {
     try {
-        const { course, session_sequence } = req.body;
+        const { course, session_sequence, learning_sequence } = req.body;
 
         const studySessionRef = await addDoc(studySessionsCollectionRef, {
             course,
             session_sequence,
+            learning_sequence,
             created_at: new Date()
         });
+
+        // Increment completedSessions in the courses collection
+        const courseRef = doc(coursesCollectionRef, course);
+        await updateDoc(courseRef, {
+            completedSessions: increment(1)
+        }, { merge: true }); // Use merge: true to create the field if it doesn't exist
 
         res.json({
             id: studySessionRef.id,

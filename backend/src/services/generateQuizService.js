@@ -89,15 +89,32 @@ export async function callOpenRouterAPI(prompt) {
 }
 
 export function extractJSONFromAIResponse(text) {
+    let jsonString = null;
+
+    // Attempt to find JSON within ```json ... ``` markdown block
     const match = text.match(/```json\s*([\s\S]*?)\s*```/i);
     if (match && match[1]) {
+        jsonString = match[1];
+    } else {
+        // Fallback: If no markdown block, try to find the first { and last }
+        const firstBrace = text.indexOf('{');
+        const lastBrace = text.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            jsonString = text.substring(firstBrace, lastBrace + 1);
+        }
+    }
+
+    if (jsonString) {
         try {
-            return JSON.parse(match[1]);
+            return JSON.parse(jsonString);
         } catch (err) {
-            console.error("JSON parse error:", err.message);
+            console.error("JSON parse error with extracted string:", err.message);
+            console.error("String attempting to parse:", jsonString);
             return null;
         }
     }
+
+    console.warn("No JSON string found or extracted from AI response:", text);
     return null;
 }
 

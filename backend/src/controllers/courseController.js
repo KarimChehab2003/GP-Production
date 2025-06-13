@@ -74,4 +74,37 @@ export const getCourseByName = async (req, res) => {
         console.error("Error getting course:", error);
         res.status(500).json({ error: "Failed to get course" });
     }
+};
+
+// Get course by name and enrolled IDs
+export const getFilteredCourse = async (req, res) => {
+    try {
+        const { name, enrolledIds } = req.query;
+        if (!name || !enrolledIds) {
+            return res.status(400).json({ error: "Course name and enrolled IDs are required" });
+        }
+
+        const enrolledIdsArray = enrolledIds.split(",");
+        if (enrolledIdsArray.length === 0) {
+            return res.status(400).json({ error: "Enrolled IDs array cannot be empty" });
+        }
+
+        const coursesCollectionRef = collection(db, "courses");
+        const q = query(
+            coursesCollectionRef,
+            where("courseName", "==", name),
+            where(db.app.firestore.FieldPath.documentId(), "in", enrolledIdsArray)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return res.status(404).json({ error: "Course not found matching criteria" });
+        }
+
+        const courseDoc = querySnapshot.docs[0];
+        res.json({ id: courseDoc.id, ...courseDoc.data() });
+    } catch (error) {
+        console.error("Error getting filtered course:", error);
+        res.status(500).json({ error: "Failed to get filtered course" });
+    }
 }; 

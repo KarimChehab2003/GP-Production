@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import LectureSectionForm from "./LectureSectionForm";
 import StudyForm from "./StudyForm";
 
 function SlotModal({ onClose, type, subject, setTaskList }) {
+  const memoizedOnClose = useCallback(onClose, [onClose]);
   const eventType =
     type === "Lec"
       ? "lecture"
@@ -52,16 +53,18 @@ function SlotModal({ onClose, type, subject, setTaskList }) {
           <StudyForm
             eventType={eventType}
             subject={subject}
-            setFormDetails={setFormDetails}
+            onCloseModal={onClose}
           />
         )}
 
-        <button
-          className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:-translate-y-1 transition duration-300 hover:cursor-pointer"
-          onClick={handleClick}
-        >
-          Mark as done
-        </button>
+        {(eventType === "lecture" || eventType === "section") && (
+          <button
+            className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:-translate-y-1 transition duration-300 hover:cursor-pointer"
+            onClick={handleClick}
+          >
+            Mark as done
+          </button>
+        )}
       </div>
     </section>
   );

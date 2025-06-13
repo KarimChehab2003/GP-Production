@@ -1,5 +1,5 @@
 import Slot from "./Slot";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function Calendar({ setTaskList }) {
   const days = [
@@ -21,25 +21,25 @@ function Calendar({ setTaskList }) {
     "8PM-10PM",
   ];
 
-  const createCalendar = () => {
-    /*
-            [0,0] -> empty
-            [0,n] -> days
-            [n,0] -> timeslots
-            rest -> slots
-        */
+  // State to hold the calendar data
+  const [calendarData, setCalendarData] = useState([]);
 
-    const calendar = Array.from({ length: 8 }, () => new Array(8).fill(""));
+  // Function to create the calendar data
+  const createCalendar = () => {
+    const initialCalendar = Array.from({ length: 8 }, () =>
+      new Array(8).fill("")
+    );
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
-        if (i == 0 && j == 0) continue;
-        if (i == 0) calendar[i][j] = days[j - 1];
-        if (j == 0) calendar[i][j] = timeslots[i - 1];
+        if (i === 0 && j === 0) continue;
+        if (i === 0) initialCalendar[i][j] = days[j - 1];
+        if (j === 0) initialCalendar[i][j] = timeslots[i - 1];
       }
     }
 
-    const collegeSchedule = JSON.parse(localStorage.getItem("currentUser"))
-      .timetable?.schedule;
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const collegeSchedule = currentUser?.timetable?.schedule;
+
     if (collegeSchedule) {
       Object.entries(collegeSchedule).forEach(([day, schedule]) => {
         const dayIndex = days.indexOf(day);
@@ -47,21 +47,24 @@ function Calendar({ setTaskList }) {
         Object.entries(schedule).forEach(([time, subject]) => {
           const timeIndex = timeslots.indexOf(time);
           if (timeIndex !== -1) {
-            calendar[timeIndex + 1][dayIndex + 1] = subject;
+            initialCalendar[timeIndex + 1][dayIndex + 1] = subject;
           }
         });
       });
     }
-
-    return calendar;
+    return initialCalendar;
   };
 
-  const calendar = createCalendar();
+  // Effect to update calendar data when setTaskList or currentUser in localStorage changes
+  useEffect(() => {
+    setCalendarData(createCalendar());
+  }, [setTaskList]); // Depend on setTaskList, which should trigger when relevant data changes
+
   const currentDayName = days[new Date().getDay()];
 
   return (
     <div className="grid grid-cols-8">
-      {calendar.map((row, i) =>
+      {calendarData.map((row, i) =>
         row.map((col, j) => {
           let slotType = "default";
           let isCurrentDay = false;
@@ -90,7 +93,7 @@ function Calendar({ setTaskList }) {
           } else {
             // Schedule slots
             slotType = "slot";
-            isCurrentDay = calendar[0][j] === currentDayName; // Check if current day for the column
+            isCurrentDay = calendarData[0][j] === currentDayName; // Check if current day for the column
 
             const content = col;
             if (content.startsWith("Study:")) {
