@@ -4,7 +4,6 @@ import SlotModal from "./SlotModal";
 function Timeslot({
   content,
   type,
-  setTaskList,
   isCurrentDay,
   sessionCategory,
   modalEventType,
@@ -101,7 +100,6 @@ function Timeslot({
           onClose={handleCloseModal}
           type={modalEventType}
           subject={modalSubject}
-          setTaskList={setTaskList}
           modalLectureNumber={modalLectureNumber}
           modalDay={modalDay}
           modalTime={modalTime}

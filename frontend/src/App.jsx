@@ -1,25 +1,30 @@
-import React, { useState } from "react";
+import React from "react";
 import SignIn from "./pages/SignIn";
 import Registration from "./pages/Registration";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Main from "./pages/Main";
-import Dashboard from "./pages/Dashboard";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Layout from "./pages/Layout";
+import Calendar from "./components/Calendar";
+import Tasks from "./pages/Tasks";
+import Insights from "./pages/Insights";
+import { TasksProvider } from "./contexts/TasksContext";
+
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/"
-          index
-          element={<Registration />}
-        />
-        <Route
-          path="/login"
-          element={<SignIn />}
-        />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </Router>
+    <TasksProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Registration />} />
+          <Route path="/login" element={<SignIn />} />
+          <Route path="/dashboard/*" element={<Layout />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </TasksProvider>
   );
 };
 

@@ -2,17 +2,18 @@ import { useState, useCallback } from "react";
 import LectureSectionForm from "./LectureSectionForm";
 import StudyForm from "./StudyForm";
 import RetryQuizForm from "./RetryQuizForm";
+import { useTasks } from "../contexts/TasksContext";
 
 function SlotModal({
   onClose,
   type,
   subject,
-  setTaskList,
   modalLectureNumber,
   modalDay,
   modalTime,
   onRemoveQuizSession,
 }) {
+  const { setTasks } = useTasks();
   const memoizedOnClose = useCallback(onClose, [onClose]);
   const eventType =
     type === "Lec"
@@ -30,7 +31,7 @@ function SlotModal({
   });
 
   const handleClick = () => {
-    setTaskList((prevTaskList) => [...prevTaskList, formDetails]);
+    setTasks((prevTasks) => [...prevTasks, formDetails]);
     onClose();
   };
 
