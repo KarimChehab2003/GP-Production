@@ -28,10 +28,49 @@ function SlotModal({
   const [formDetails, setFormDetails] = useState({
     subject: subject,
     type: eventType,
+    day: modalDay,
+    time: modalTime,
+    timestamp: Date.now(),
   });
 
   const handleClick = () => {
     setTasks((prevTasks) => [...prevTasks, formDetails]);
+
+    if (eventType === "lecture" || eventType === "section") {
+      const {
+        subject: completedSubject,
+        number: lectureNumber,
+        status,
+      } = formDetails;
+
+      let generatedTaskDescription = "";
+      if (status === "fully") {
+        const numOnly = lectureNumber
+          ? lectureNumber.replace(eventType + " ", "")
+          : "";
+        generatedTaskDescription = `Study ${eventType} ${numOnly} from ${completedSubject} in the next study session`;
+      } else if (status === "partially") {
+        const numOnly = lectureNumber
+          ? lectureNumber.replace(eventType + " ", "")
+          : "";
+        generatedTaskDescription = `Review ${eventType} ${numOnly} from ${completedSubject} in the next study session`;
+      }
+
+      if (generatedTaskDescription) {
+        setTasks((prevTasks) => [
+          ...prevTasks,
+          {
+            subject: generatedTaskDescription,
+            type: "generated",
+            originalEventType: eventType,
+            originalSubject: completedSubject,
+            originalLectureNumber: lectureNumber,
+            originalStatus: status,
+            timestamp: Date.now(),
+          },
+        ]);
+      }
+    }
     onClose();
   };
 

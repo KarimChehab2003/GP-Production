@@ -1,6 +1,6 @@
 import { generateQuizFromFile } from "../services/generateQuizService.js";
 import { db } from "../config/adminFirebase.js";
-import { doc, updateDoc, addDoc, increment } from "firebase/firestore";
+import { doc, updateDoc, addDoc, increment, FieldValue } from "firebase/firestore";
 import { learningObjectivesCollectionRef, studySessionsCollectionRef, evaluationCollectionRef, coursesCollectionRef } from "../config/dbCollections.js";
 import { query, where, getDocs } from "firebase/firestore";
 
@@ -40,12 +40,13 @@ export async function createLearningObjective(req, res) {
 
 export async function createStudySession(req, res) {
     try {
-        const { course, session_sequence, learning_sequence } = req.body;
+        const { course, session_sequence, learning_sequence, session_number } = req.body;
 
         const studySessionRef = await addDoc(studySessionsCollectionRef, {
             course,
             session_sequence,
             learning_sequence,
+            session_number,
             created_at: new Date()
         });
 
@@ -89,15 +90,33 @@ export async function createEvaluation(req, res) {
 
 export async function updateUser(req, res) {
     try {
-        const { userId, timetable } = req.body;
+        const { userId, timetable, weekly_report } = req.body;
+        // console.log("QuizController - Received update user request. userId:", userId, "weekly_report:", weekly_report, "full body:", req.body);
 
         const userRef = doc(db, "students", userId);
-        await updateDoc(userRef, {
-            timetable: timetable
-        });
+        const updateData = {};
+
+        if (timetable) {
+            updateData.timetable = timetable;
+        }
+
+        if (weekly_report) {
+            updateData.weekly_report = weekly_report;
+        }
+
+        // Explicitly remove weeklyReportId if it exists in the document
+        if (req.body.weeklyReportId !== undefined) {
+            updateData.weeklyReportId = FieldValue.delete();
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: "No valid fields to update provided." });
+        }
+
+        await updateDoc(userRef, updateData);
 
         res.json({
-            message: "User timetable updated successfully"
+            message: "User updated successfully"
         });
     } catch (error) {
         console.error("Error updating user:", error);

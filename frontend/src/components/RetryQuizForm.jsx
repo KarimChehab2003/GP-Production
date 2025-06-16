@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import axios from "axios";
 import Quiz from "./Quiz";
+import { useTasks } from "../contexts/TasksContext";
 
 function RetryQuizForm({
   subject,
@@ -10,6 +11,7 @@ function RetryQuizForm({
   modalTime,
   onRemoveQuizSession,
 }) {
+  const { setTasks } = useTasks();
   const [file, setFile] = useState(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
@@ -60,7 +62,21 @@ function RetryQuizForm({
     calculatedScore
   ) => {
     console.log("Quiz completed. Passed:", passed, "Score:", calculatedScore);
-    // Remove the temporary session from the calendar and update the database
+
+    // 1. Record the quiz outcome in tasks context
+    setTasks((prevTasks) => [
+      ...prevTasks,
+      {
+        type: "quiz-outcome",
+        subject: subject,
+        lectureNumber: lectureNumber,
+        status: passed ? "passed" : "failed",
+        score: calculatedScore, // Store the score for trends
+        timestamp: Date.now(),
+      },
+    ]);
+
+    // 2. Remove the temporary session from the calendar and update the database
     if (modalDay && modalTime && subject && lectureNumber) {
       onRemoveQuizSession(modalDay, modalTime, subject, lectureNumber);
     }

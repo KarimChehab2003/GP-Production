@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import LectureForm from "./LectureForm"; // Import LectureForm from its new file
 import React from "react";
+import { useTasks } from "../contexts/TasksContext"; // Import useTasks
 
 function StudyForm({
   eventType,
@@ -9,8 +10,13 @@ function StudyForm({
   onCloseModal,
   modalQuizLectureNumber,
 }) {
+  const { setTasks } = useTasks(); // Use the hook here
   const [lectureCount, setLectureCount] = useState(1);
-  const [lectureDetails, setLectureDetails] = useState([]);
+  const [lectureDetails, setLectureDetails] = useState(
+    modalQuizLectureNumber
+      ? [{ number: modalQuizLectureNumber, status: "", file: null, quiz: null }]
+      : [{ number: 1, status: "", file: null, quiz: null }] // Initialize with one lecture by default
+  );
   const [error, setError] = useState(null);
   const [currentSessionNumber, setCurrentSessionNumber] = useState(1);
   const [courseId, setCourseId] = useState(null);
@@ -59,14 +65,6 @@ function StudyForm({
     fetchCourseData();
   }, [subject]);
 
-  useEffect(() => {
-    if (modalQuizLectureNumber && lectureDetails.length === 0) {
-      setLectureDetails([
-        { number: modalQuizLectureNumber, status: "", file: null, quiz: null },
-      ]);
-    }
-  }, [modalQuizLectureNumber, lectureDetails.length]);
-
   const handleLectureChange = useCallback((index, field, value) => {
     setLectureDetails((prevDetails) => {
       const updatedDetails = [...prevDetails];
@@ -94,6 +92,19 @@ function StudyForm({
 
   const handleQuizCompleted = useCallback(
     (passed, quizData, userAnswers, calculatedScore, lectureNumberForQuiz) => {
+      // Record the quiz outcome in tasks context
+      setTasks((prevTasks) => [
+        ...prevTasks,
+        {
+          type: "quiz-outcome",
+          subject: subject.replace(/^Study:\s*/, "").trim(), // Extract subject from study session name
+          lectureNumber: lectureNumberForQuiz,
+          status: passed ? "passed" : "failed",
+          score: calculatedScore,
+          timestamp: Date.now(),
+        },
+      ]);
+
       setCompletedQuizzesResults((prevResults) => [
         ...prevResults,
         {
@@ -105,7 +116,7 @@ function StudyForm({
         },
       ]);
     },
-    [setCompletedQuizzesResults]
+    [setTasks, subject, setCompletedQuizzesResults]
   );
 
   const handleFinalStudySessionSubmission = async () => {
@@ -239,6 +250,7 @@ function StudyForm({
         course: courseId,
         session_sequence: sessionSequence,
         learning_sequence: learningSequence,
+        session_number: currentSessionNumber,
       });
 
       // Update user timetable in Firebase if any changes were made due to failed quizzes
@@ -256,59 +268,52 @@ function StudyForm({
         );
       }
 
-      alert("Study session submitted successfully!");
-      onCloseModal(); // Close modal on successful submission
+      onCloseModal();
     } catch (err) {
       console.error("Error submitting study session:", err);
-      setError(err.response?.data?.error || "Failed to submit study session.");
+      setError("Failed to submit study session.");
     }
   };
 
+  const addLecture = () => {
+    setLectureCount((prev) => prev + 1);
+    setLectureDetails((prevDetails) => [
+      ...prevDetails,
+      { number: null, status: "", file: null, quiz: null },
+    ]);
+  };
+
   return (
-    <div className="flex flex-col p-4 space-y-4 overflow-y-auto max-h-[80vh]">
-      <h2 className="text-2xl font-semibold mb-3">
-        STUDY SESSION #{currentSessionNumber}
-      </h2>
-
-      {[...Array(lectureCount)].map((_, index) => (
-        <LectureForm
-          key={index}
-          index={index}
-          lectureNumber={lectureDetails[index]?.number}
-          onLectureChange={handleLectureChange}
-          sessionNumber={currentSessionNumber}
-          onQuizCompleted={handleQuizCompleted}
-        />
-      ))}
-
-      <div className="flex justify-between mt-6">
-        <button
-          onClick={() => setLectureCount(lectureCount + 1)}
-          className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-        >
-          Add Lecture
-        </button>
-        <button
-          onClick={() => setLectureCount(Math.max(1, lectureCount - 1))}
-          className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-        >
-          Remove Last Lecture
-        </button>
+    <div className="p-4 overflow-y-auto max-h-[80vh]">
+      <h3 className="text-xl font-semibold mb-3">
+        STUDY SESSION #{currentSessionNumber} for:{" "}
+        {subject.replace(/^Study:\s*/, "").trim()}
+      </h3>
+      {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+      <div className="flex flex-col space-y-4">
+        {lectureDetails.map((detail, index) => (
+          <LectureForm
+            key={index}
+            index={index}
+            lectureNumber={detail.number || index + 1} // Pass lectureNumber from detail or use index + 1 as fallback
+            onLectureChange={handleLectureChange}
+            onQuizCompleted={handleQuizCompleted}
+          />
+        ))}
       </div>
 
-      {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
-
+      <button
+        onClick={addLecture}
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300 cursor-pointer"
+      >
+        Add More Lectures
+      </button>
       {completedQuizzesResults.length > 0 && (
         <button
           onClick={handleFinalStudySessionSubmission}
-          className={`mt-4 px-6 py-2 rounded-lg shadow-md transition duration-300 ${
-            !courseId
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-emerald-600 text-white hover:-translate-y-1 hover:cursor-pointer"
-          }`}
-          disabled={!courseId}
+          className="mt-4 ml-2 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition duration-300 cursor-pointer"
         >
-          Mark Study Session as Done
+          Finalize Study Session
         </button>
       )}
     </div>

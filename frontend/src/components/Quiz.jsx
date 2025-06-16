@@ -61,10 +61,27 @@ function Quiz({
 
     if (type === "fillInTheBlank") {
       if (typeof correct === "string") {
-        const possibleAnswers = correct
+        const correctParts = correct
           .split(",")
-          .map((ans) => ans.trim().toLowerCase());
-        return possibleAnswers.includes(user.trim().toLowerCase());
+          .map((ans) => ans.trim().toLowerCase())
+          .sort(); // Sort to handle order insensitivity
+        const userParts = user
+          .split(",")
+          .map((ans) => ans.trim().toLowerCase())
+          .sort(); // Sort to handle order insensitivity
+
+        console.log("--- FillInTheBlank Debug ---");
+        console.log("User input (raw):", user);
+        console.log("Correct answer (raw):", correct);
+        console.log("Correct parts (sorted):", correctParts);
+        console.log("User parts (sorted):", userParts);
+
+        // Compare the sorted arrays
+        const result =
+          correctParts.length === userParts.length &&
+          correctParts.every((value, index) => value === userParts[index]);
+        console.log("Comparison result:", result);
+        return result;
       }
     }
 
