@@ -11,20 +11,12 @@ import { createStudySchedule } from "./createStudySchedule.js";
 export const registerNewStudent = async (data) => {
     if (!data) throw new Error("No data received");
 
-    // Check if email already exists
-    const studentsDocs = await getDocs(studentsCollectionRef);
-    const students = studentsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-    if (students.find((s) => s.email === data.email)) {
-        throw new Error("User email already taken");
-    }
-
     // Add courses and get references
     const courseRefs = [];
     for (const course of data.courses) {
         const createdCourseRef = await addDoc(coursesCollectionRef, {
             courseName: course.courseName,
             cmca: course.scores,
-            exam_date: course.examDate,
             LecturesAndSectionsTimeslots: course.timeSlots,
         });
         courseRefs.push(createdCourseRef.id);

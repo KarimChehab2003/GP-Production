@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 
 const CourseForm = ({
   createdUser,
@@ -10,6 +9,74 @@ const CourseForm = ({
   const criteria = ["Computation", "Memorization", "Creativity", "Analysis"];
   const [numCourses, setNumCourses] = useState(0);
   const [courses, setCourses] = useState([]);
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Validate number of courses
+    if (!numCourses || numCourses < 1 || numCourses > 12) {
+      newErrors.numCourses = "Number of courses must not be less than 1 or greater than 12";
+    }
+
+    // Track all time slots to check for conflicts
+    const allTimeSlots = [];
+
+    // Validate each course
+    courses.forEach((course, courseIndex) => {
+      // Validate course name
+      if (!course.courseName?.trim()) {
+        newErrors[`course_${courseIndex}_name`] = "Course name is required";
+      }
+
+      // Validate CMCA scores
+      criteria.forEach((criterion) => {
+        if (!course.scores[criterion]) {
+          newErrors[`course_${courseIndex}_${criterion}`] = `${criterion} rating is required`;
+        }
+      });
+
+      // Validate time slots and check for conflicts
+      course.timeSlots.forEach((slot, slotIndex) => {
+        if (!slot.day) {
+          newErrors[`course_${courseIndex}_slot_${slotIndex}_day`] = "Day is required";
+        }
+        if (!slot.timeslot) {
+          newErrors[`course_${courseIndex}_slot_${slotIndex}_timeslot`] = "Time slot is required";
+        }
+
+        // If both day and timeslot are selected, check for conflicts
+        if (slot.day && slot.timeslot) {
+          const timeSlotKey = `${slot.day}-${slot.timeslot}`;
+          
+          // Check if this time slot is already used
+          const existingSlot = allTimeSlots.find(
+            existing => existing.timeSlotKey === timeSlotKey
+          );
+
+          if (existingSlot) {
+            // Add error for both the current slot and the conflicting slot
+            newErrors[`course_${courseIndex}_slot_${slotIndex}_conflict`] = 
+              `Time slot conflict with ${existingSlot.courseName} (${existingSlot.type})`;
+            newErrors[`course_${existingSlot.courseIndex}_slot_${existingSlot.slotIndex}_conflict`] = 
+              `Time slot conflict with ${course.courseName} (${slot.type})`;
+          } else {
+            // Add this time slot to the tracking array
+            allTimeSlots.push({
+              timeSlotKey,
+              courseIndex,
+              slotIndex,
+              courseName: course.courseName,
+              type: slot.type
+            });
+          }
+        }
+      });
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleNumCoursesChange = (e) => {
     const num = parseInt(e.target.value, 10) || 0;
@@ -18,34 +85,55 @@ const CourseForm = ({
       new Array(num).fill().map(() => ({
         courseName: "",
         scores: { Computation: 1, Memorization: 1, Creativity: 1, Analysis: 1 },
-        examDate: { day: "", hour: "" },
         timeSlots: [{ day: "", timeslot: "", type: "Lecture" }],
       }))
     );
+    // Clear errors when number of courses changes
+    setErrors({});
   };
 
   const handleCourseChange = (index, field, value) => {
     const updatedCourses = [...courses];
     updatedCourses[index][field] = value;
     setCourses(updatedCourses);
+    // Clear error for this field when it changes
+    if (errors[`course_${index}_${field}`]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[`course_${index}_${field}`];
+        return newErrors;
+      });
+    }
   };
 
   const handleScoreChange = (courseIndex, criterion, value) => {
     const updatedCourses = [...courses];
     updatedCourses[courseIndex].scores[criterion] = value;
     setCourses(updatedCourses);
-  };
-
-  const handleExamDateChange = (index, field, value) => {
-    const updatedCourses = [...courses];
-    updatedCourses[index].examDate[field] = value;
-    setCourses(updatedCourses);
+    // Clear error for this criterion when it changes
+    if (errors[`course_${courseIndex}_${criterion}`]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[`course_${courseIndex}_${criterion}`];
+        return newErrors;
+      });
+    }
   };
 
   const handleTimeSlotChange = (courseIndex, slotIndex, field, value) => {
     const updatedCourses = [...courses];
     updatedCourses[courseIndex].timeSlots[slotIndex][field] = value;
     setCourses(updatedCourses);
+    // Clear error for this time slot field when it changes
+    if (errors[`course_${courseIndex}_slot_${slotIndex}_${field}`] || 
+        errors[`course_${courseIndex}_slot_${slotIndex}_conflict`]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[`course_${courseIndex}_slot_${slotIndex}_${field}`];
+        delete newErrors[`course_${courseIndex}_slot_${slotIndex}_conflict`];
+        return newErrors;
+      });
+    }
   };
 
   const addTimeSlot = (courseIndex) => {
@@ -66,12 +154,21 @@ const CourseForm = ({
     }
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      const updatedUser = { ...createdUser, courses: courses };
+      setCreatedUser(updatedUser);
+      handleSubmit(e, updatedUser);
+    }
+  };
+
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleFormSubmit}
       className="w-full max-w-2xl bg-white p-6 rounded-xl shadow-md my-4 mx-2 sm:mx-auto"
     >
-      <h2 className="text-2xl font-semibold mb-2   text-center">
+      <h2 className="text-2xl font-semibold mb-2 text-center">
         Course Details
       </h2>
       <p className="text-gray-600 text-center text-sm mb-6">
@@ -80,14 +177,22 @@ const CourseForm = ({
       </p>
 
       {/* Number of Courses */}
-      <label className="block font-medium">Number of Courses:</label>
-      <input
-        type="number"
-        value={numCourses}
-        onChange={handleNumCoursesChange}
-        min="1"
-        className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
-      />
+      <div>
+        <label className="block font-medium">Number of Courses:</label>
+        <input
+          type="number"
+          value={numCourses}
+          onChange={handleNumCoursesChange}
+          min="1"
+          max="12"
+          className={`border p-2 w-full mt-1 rounded-lg ${
+            errors.numCourses ? "border-red-500" : "border-gray-300"
+          } outline-none focus:border-indigo-500 transition-color duration-300`}
+        />
+        {errors.numCourses && (
+          <span className="text-red-500 text-sm">{errors.numCourses}</span>
+        )}
+      </div>
 
       {courses.map((course, index) => (
         <div
@@ -106,47 +211,17 @@ const CourseForm = ({
                 onChange={(e) =>
                   handleCourseChange(index, "courseName", e.target.value)
                 }
-                className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
+                className={`border p-2 w-full mt-1 rounded-lg ${
+                  errors[`course_${index}_name`] ? "border-red-500" : "border-gray-300"
+                } outline-none focus:border-indigo-500 transition-color duration-300`}
                 placeholder="Enter Course Name"
               />
-            </div>
-
-            {/* Exam Date */}
-            <div>
-              <label className="block font-medium">Exam Day:</label>
-              <select
-                value={course.examDate.day}
-                onChange={(e) =>
-                  handleExamDateChange(index, "day", e.target.value)
-                }
-                className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
-              >
-                <option value="" hidden>
-                  Select a day
-                </option>
-                <option value="Sunday">Sunday</option>
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-              </select>
-            </div>
-
-            {/* Exam Time */}
-            <div>
-              <label className="block font-medium">Exam Time:</label>
-              <input
-                type="time"
-                value={course.examDate.hour}
-                onChange={(e) =>
-                  handleExamDateChange(index, "hour", e.target.value)
-                }
-                className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
-              />
+              {errors[`course_${index}_name`] && (
+                <span className="text-red-500 text-sm">{errors[`course_${index}_name`]}</span>
+              )}
             </div>
           </div>
+          
           {/* CMCA Ratings */}
           <h4 className="font-semibold mt-3">Rate Each Criterion</h4>
           {criteria.map((criterion) => (
@@ -177,8 +252,12 @@ const CourseForm = ({
                   </label>
                 ))}
               </div>
+              {errors[`course_${index}_${criterion}`] && (
+                <span className="text-red-500 text-sm">{errors[`course_${index}_${criterion}`]}</span>
+              )}
             </div>
           ))}
+
           {/* Lecture & Section Timeslots */}
           <h4 className="font-semibold mt-3">Lecture & Section Timeslots</h4>
           {course.timeSlots.map((slot, slotIndex) => (
@@ -219,7 +298,12 @@ const CourseForm = ({
                       e.target.value
                     )
                   }
-                  className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
+                  className={`border p-2 w-full mt-1 rounded-lg ${
+                    errors[`course_${index}_slot_${slotIndex}_day`] || 
+                    errors[`course_${index}_slot_${slotIndex}_conflict`] 
+                      ? "border-red-500" 
+                      : "border-gray-300"
+                  } outline-none focus:border-indigo-500 transition-color duration-300`}
                 >
                   <option value="" hidden>
                     Select a day
@@ -232,6 +316,12 @@ const CourseForm = ({
                   <option value="Friday">Friday</option>
                   <option value="Saturday">Saturday</option>
                 </select>
+                {errors[`course_${index}_slot_${slotIndex}_day`] && (
+                  <span className="text-red-500 text-sm">{errors[`course_${index}_slot_${slotIndex}_day`]}</span>
+                )}
+                {errors[`course_${index}_slot_${slotIndex}_conflict`] && (
+                  <span className="text-red-500 text-sm">{errors[`course_${index}_slot_${slotIndex}_conflict`]}</span>
+                )}
               </div>
 
               {/* Timeslot Input */}
@@ -247,7 +337,12 @@ const CourseForm = ({
                       e.target.value
                     )
                   }
-                  className="border p-2 w-full mt-1 rounded-lg border-gray-300 outline-none focus:border-indigo-500 transition-color duration-300"
+                  className={`border p-2 w-full mt-1 rounded-lg ${
+                    errors[`course_${index}_slot_${slotIndex}_timeslot`] || 
+                    errors[`course_${index}_slot_${slotIndex}_conflict`]
+                      ? "border-red-500" 
+                      : "border-gray-300"
+                  } outline-none focus:border-indigo-500 transition-color duration-300`}
                 >
                   <option value="">Select a time slot</option>
                   <option value="8AM-10AM">8AM - 10AM</option>
@@ -257,11 +352,13 @@ const CourseForm = ({
                   <option value="4PM-6PM">4PM - 6PM</option>
                   <option value="6PM-8PM">6PM - 8PM</option>
                   <option value="8PM-10PM">8PM - 10PM</option>
-                  <option value="10PM-12AM">10PM - 12AM</option>
                 </select>
+                {errors[`course_${index}_slot_${slotIndex}_timeslot`] && (
+                  <span className="text-red-500 text-sm">{errors[`course_${index}_slot_${slotIndex}_timeslot`]}</span>
+                )}
               </div>
 
-              {/* Remove Button (aligned to the right) */}
+              {/* Remove Button */}
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -286,17 +383,15 @@ const CourseForm = ({
 
       <div className="text-center flex justify-between items-center space-x-2 mt-8">
         <button
+          type="button"
           className="w-full block text-white font-semibold bg-gray-400 px-3 py-2 rounded-md cursor-pointer hover:-translate-y-1 transition duration-300"
           onClick={handlePrevious}
         >
           Previous
         </button>
         <button
+          type="submit"
           className="w-full block text-white font-semibold bg-indigo-400 px-3 py-2 rounded-md cursor-pointer hover:-translate-y-1 transition duration-300"
-          onClick={() => {
-            setCreatedUser((prevState) => ({ ...prevState, courses: courses }));
-            console.log(createdUser);
-          }}
         >
           Submit
         </button>

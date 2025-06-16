@@ -2,6 +2,24 @@ import { getDocs } from "firebase/firestore";
 import { studentsCollectionRef } from "../config/dbCollections.js";
 import { registerNewStudent } from "../services/studentService.js";
 
+// Check Email Availability Controller
+export const checkEmailAvailability = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: "Email is required" });
+        }
+
+        const studentsDocs = await getDocs(studentsCollectionRef);
+        const students = studentsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+        const isAvailable = !students.find((s) => s.email === email);
+        
+        return res.json(isAvailable);
+    } catch (err) {
+        return res.status(500).json({ error: "Failed to check email availability" });
+    }
+};
+
 // Login Controller
 export const loginUser = async (req, res) => {
     try {
@@ -31,6 +49,6 @@ export const registerUser = async (req, res) => {
         const newStudent = await registerNewStudent(studentData);
         return res.json(newStudent);
     } catch (err) {
-        return res.status(500).json({ error: err.message });
+        return res.status(400).json({ error: err || "Registration failed" });
     }
 };

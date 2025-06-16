@@ -10,7 +10,7 @@ function Registration() {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, updatedUser) => {
     e.preventDefault();
 
     console.log(createdUser);
@@ -18,7 +18,7 @@ function Registration() {
     try {
       const response = await axios.post(
         "http://localhost:5100/auth/register",
-        createdUser
+        updatedUser
       );
       localStorage.setItem("currentUser", JSON.stringify(response.data));
       navigate("/dashboard/study-plan");
