@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaRegCalendarAlt, FaTasks, FaBell } from "react-icons/fa";
 import { IoIosSettings } from "react-icons/io";
 import { GoGraph } from "react-icons/go";
@@ -8,6 +9,8 @@ function Dashboard() {
   const [date, setDate] = useState(new Date());
   const [currentUser, setCurrentUser] = useState({});
   const [taskList, setTaskList] = useState([]);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setDate(new Date());
@@ -17,6 +20,11 @@ function Dashboard() {
   useEffect(() => {
     console.log(taskList);
   }, [taskList]);
+
+  const logout = () => {
+    localStorage.removeItem("currentUser");
+    navigate("/login");
+  }
 
   // console.log(currentUser)
   return (
@@ -70,9 +78,31 @@ function Dashboard() {
               </li>
             </ul>
           </div>
-          <div className="flex justify-center items-center space-x-2 text-xl cursor-pointer">
-            <IoIosSettings />
-            <p>Settings</p>
+          <div className="flex justify-center items-center space-x-2 text-xl cursor-pointer settings-container relative">
+            <div 
+              className="flex items-center space-x-2"
+              onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+            >
+              <IoIosSettings />
+              <p>Settings</p>
+            </div>
+            
+            {showSettingsDropdown && (
+              <div className="absolute left-30 bottom-0 mt-2 w-60 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                  My Profile
+                </button>
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                  Change My College Schedule
+                </button>
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                  Change My External Activities
+                </button>
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick = {() => logout()}>
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
