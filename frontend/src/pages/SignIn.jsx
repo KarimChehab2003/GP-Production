@@ -40,7 +40,7 @@ function SignIn() {
         user
       );
       localStorage.setItem("currentUser", JSON.stringify(response.data));
-      navigate("/dashboard");
+      navigate("/dashboard/study-plan");
     } catch (error) {
       if (error.response) {
         if (error.response.status === 404) {

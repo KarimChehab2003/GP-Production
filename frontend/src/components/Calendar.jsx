@@ -110,7 +110,7 @@ function Calendar({ setTaskList }) {
   const currentDayName = days[new Date().getDay()];
 
   return (
-    <div className="grid grid-cols-8">
+    <div className="grid grid-cols-8 h-full">
       {calendarData.map((row, i) =>
         row.map((col, j) => {
           let slotType = "default";
@@ -154,9 +154,11 @@ function Calendar({ setTaskList }) {
             } else if (content.startsWith("Lec:")) {
               sessionCategory = "lecture";
               modalEventType = "Lec";
+              modalSubject = content.replace(/^Lec:\s*/, "").trim(); // Extract subject for lectures
             } else if (content.startsWith("Sec:")) {
               sessionCategory = "section";
               modalEventType = "Sec";
+              modalSubject = content.replace(/^Sec:\s*/, "").trim(); // Extract subject for sections
             } else if (content === "Break") {
               sessionCategory = "break";
               modalEventType = "";

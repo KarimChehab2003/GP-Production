@@ -21,7 +21,7 @@ function Registration() {
         updatedUser
       );
       localStorage.setItem("currentUser", JSON.stringify(response.data));
-      navigate("/dashboard");
+      navigate("/dashboard/study-plan");
     } catch (error) {
       console.error(error);
     }
