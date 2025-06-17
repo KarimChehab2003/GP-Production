@@ -25,7 +25,17 @@ constructor(lecture_number,sessionNumber,created_at){
 // the whole learning sequence 
 var learning_sequence =[]
 
-
+// sort helper function
+function sortByDate(sequence) {
+    return sequence.sort((a, b) => {
+        // Handle both Learning_Objective and evaluation objects
+        const dateA = a.created_at instanceof Timestamp ? a.created_at.toDate() : new Date(a.created_at);
+        const dateB = b.created_at instanceof Timestamp ? b.created_at.toDate() : new Date(b.created_at);
+        
+        // Compare dates
+        return dateA.getTime() - dateB.getTime();
+    });
+}
 
 
 // Linear Navigation Pattern
@@ -36,10 +46,17 @@ LNrelations=0;
 
 LNpvalue=0;
 
-for (let i=0;i<session_sequence.length-1;i++){// to iterate only to the last relation
+// filtering learning objectives and sorting them by date
+learning_objectives=session_sequence.filter(lo=> lo instanceof Learning_Objective);
 
-prevLO = session_sequence[i];
-nextLO = session_sequence[i+1];
+const sorted_learning_objectives=sortByDate(learning_objectives);
+
+
+
+for (let i=0;i<sorted_learning_objectives.length-2;i++){// to iterate only to the last relation
+
+prevLO = sorted_learning_objectives[i];
+nextLO = sorted_learning_objectives[i+1];
 if(nextLO.lecture_number-prevLO.lecture_number==1){
     LNrelations++;
 }
@@ -56,19 +73,15 @@ return LNpvalue;
 function detectCRPattern(session_sequence){
     let already_visited=0;
 for(let LO in session_sequence){
-
+    if (learning_sequence.some(check_LO=>
+        check_LO.lecture_number==LO.lecture_number &&
+        check_LO.created_at.toDate() < LO.created_at.toDate() 
+        // checking for the learning objective if it was persisted on an earlier date
+    ) ){
+    
+    already_visited++;
+    }
 }
-
-if (learning_sequence.some(check_LO=>
-    check_LO.lecture_number==LO.lecture_number &&
-    check_LO.created_at.toDate() < LO.created_at.toDate() 
-    // checking for the learning objective if it was persisted on an earlier date
-) ){
-
-already_visited++;
-}
-
-
 
 
 CR_pvalue = already_visited/session_sequence.length-1;
@@ -85,14 +98,14 @@ let ST_relations=0;
 
 let lecturesInSession= session_sequence.filter(lo=> lo instanceof Learning_Objective);
 
-let quizzes=session_sequence.filter(lo=> lo instanceof evaluation);
+
 
 
 
 // getting number of simultaneous tasks (number of lectures in the session except
 // the quiz lecture)
 
-let newlectures = []
+
 
 for(let lecture of lecturesInSession){
     if(!learning_sequence.some(check_LO=>
@@ -100,14 +113,14 @@ for(let lecture of lecturesInSession){
         check_LO.created_at.toDate() < lecture.created_at.toDate() 
         // checking for the learning objective if it was persisted on an earlier date
     )){
-        newlectures.push(lecture);
+        ST_relations++;
         
 
 
     }
 }
 
-ST_relations=newlectures.length - 1; // the number of additional lectures
+ST_relations --; //deducting the original lecture
 
 
 
@@ -202,11 +215,6 @@ return session_wmc;
 
 export const calculateWMCinSubject = async (subject_id , numberOfSessionsPerWeek) => {
 
-    // retriving the previously learned LOs 
-    // previousDocs = await getDocs(learningObjectivesCollectionRef);
-
-    // previously_visited_LOs = previousDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
-    // .filter(lo=> lo.course == subject_reference);
 
 //getting learning sequence
 
