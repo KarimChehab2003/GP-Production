@@ -64,6 +64,8 @@ function Layout() {
               onClose={handleCloseSettingsModal}
               type={settingsModalType}
               conflicts={currentUser.timetable.conflicts}
+              externalActivities={currentUser.extracurricularActivities}
+              takesExternalActivities={currentUser.takesCurricularActivities}
             />
           )}
 

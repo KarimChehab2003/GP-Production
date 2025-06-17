@@ -116,14 +116,56 @@ class ScheduleGenerator:
         
         # Add external activities
         for activity, (day, preferred_slot, location) in external_activities.items():
-            current_schedule[day][preferred_slot] = activity
-            
-            # Add break after outdoor activities
-            if location == "Outdoor":
-                slot_index = self.time_slots.index(preferred_slot)
-                if slot_index + 1 < len(self.time_slots):
-                    next_slot = self.time_slots[slot_index + 1]
-                    current_schedule[day][next_slot] = "Break"
+            # Check if the preferred slot is already taken by college schedule
+            if current_schedule[day][preferred_slot] != "":
+                # Find nearest available slot on the same day
+                preferred_slot_index = self.time_slots.index(preferred_slot)
+                alternative_slots = []
+                
+                # Look for slots before and after preferred slot
+                for i in range(1, len(self.time_slots)):
+                    # Check slot before
+                    if preferred_slot_index - i >= 0:
+                        alt_slot = self.time_slots[preferred_slot_index - i]
+                        if current_schedule[day][alt_slot] == "":
+                            alternative_slots.append(alt_slot)
+                    # Check slot after
+                    if preferred_slot_index + i < len(self.time_slots):
+                        alt_slot = self.time_slots[preferred_slot_index + i]
+                        if current_schedule[day][alt_slot] == "":
+                            alternative_slots.append(alt_slot)
+                
+                # If we found alternative slots, use the first available one
+                if alternative_slots:
+                    new_slot = alternative_slots[0]
+                    current_schedule[day][new_slot] = activity
+                    self.conflicts.append(
+                        f"Activity '{activity}' has been moved from '{preferred_slot}' to '{new_slot}' "
+                        f"on '{day}' due to conflict with college schedule"
+                    )
+                    
+                    # Add break after outdoor activities
+                    if location == "Outdoor":
+                        slot_index = self.time_slots.index(new_slot)
+                        if slot_index + 1 < len(self.time_slots):
+                            next_slot = self.time_slots[slot_index + 1]
+                            if current_schedule[day][next_slot] == "":
+                                current_schedule[day][next_slot] = "Break"
+                else:
+                    self.conflicts.append(
+                        f"Cannot schedule activity '{activity}' on '{day}' - no available slots found"
+                    )
+            else:
+                # If preferred slot is available, use it
+                current_schedule[day][preferred_slot] = activity
+                
+                # Add break after outdoor activities
+                if location == "Outdoor":
+                    slot_index = self.time_slots.index(preferred_slot)
+                    if slot_index + 1 < len(self.time_slots):
+                        next_slot = self.time_slots[slot_index + 1]
+                        if current_schedule[day][next_slot] == "":
+                            current_schedule[day][next_slot] = "Break"
         
         # Calculate total required sessions
         total_required_sessions = sum(sessions for _, sessions in courses.values())
