@@ -5,13 +5,21 @@ import SideNav from "./SideNav";
 import Calendar from "../components/Calendar";
 import Tasks from "./Tasks";
 import Insights from "./Insights";
+import SettingsModal from "../components/SettingsModal";
 
 function Layout() {
   const [currentUser, setCurrentUser] = useState({});
 
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsModalType, setSettingsModalType] = useState("");
+
   useEffect(() => {
     setCurrentUser(JSON.parse(localStorage.getItem("currentUser")) || {});
   }, []);
+
+  const handleCloseSettingsModal = () => {
+    setIsSettingsModalOpen(false);
+  };
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -27,7 +35,7 @@ function Layout() {
       {/* Main Content Area */}
       <div className="flex flex-1">
         {/* Sidebar Navigation */}
-        <SideNav />
+        <SideNav setIsSettingsModalOpen={setIsSettingsModalOpen} setSettingsModalType={setSettingsModalType} />
 
         {/* Main Content */}
         <main className="flex-1 p-6 bg-gray-50">
@@ -37,6 +45,15 @@ function Layout() {
             <Route path="insights" element={<Insights />} />
             <Route path="*" element={<Navigate to="study-plan" replace />} />
           </Routes>
+
+          {isSettingsModalOpen && (
+            <SettingsModal
+              onClose={handleCloseSettingsModal}
+              type={settingsModalType}
+              conflicts={currentUser.timetable.conflicts}
+            />
+          )}
+
         </main>
       </div>
     </main>
