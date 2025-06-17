@@ -1,30 +1,30 @@
+import { Timestamp } from 'firebase/firestore';
 class Learning_Objective
 {
-    constructor(course,lecture_number,sessionNumber){
+    constructor(course,lecture_number,sessionNumber,created_at){
         this.course=course;
         this.lecture_number=lecture_number;
         
         this.sessionNumber=sessionNumber;
+
+        this.created_at=created_at;
     }
 }
-// I will suppose that all evaluations are passed to be persisted in db
+// I will suppose that all evaluations that are passed to be persisted in db
 class evaluation  {
-constructor(lecture_number,sessionNumber){ 
+constructor(lecture_number,sessionNumber,created_at){ 
     this.course=course;
         this.lecture_number=lecture_number;
         
         this.sessionNumber=sessionNumber;
-}
+
+        this.created_at=created_at;
+    }
 
 }
-
+// the whole learning sequence 
 var learning_sequence =[]
 
-
-// logging the whole learning sequence for the subject
-// will be retrieved from the database (Study_Sessions collection)
-var previously_visited_LOs=[] // logging previously visited LOs
-// retrieved from Learning_Objectives collection
 
 
 
@@ -57,13 +57,19 @@ function detectCRPattern(session_sequence){
     let already_visited=0;
 for(let LO in session_sequence){
 
+}
 
-if(previously_visited_LOs.includes(LO)){
-    already_visited++;
+if (learning_sequence.some(check_LO=>
+    check_LO.lecture_number==LO.lecture_number &&
+    check_LO.created_at.toDate() < LO.created_at.toDate() 
+    // checking for the learning objective if it was persisted on an earlier date
+) ){
+
+already_visited++;
 }
 
 
-}
+
 
 CR_pvalue = already_visited/session_sequence.length-1;
 return CR_pvalue;
@@ -79,19 +85,30 @@ let ST_relations=0;
 
 let lecturesInSession= session_sequence.filter(lo=> lo instanceof Learning_Objective);
 
+let quizzes=session_sequence.filter(lo=> lo instanceof evaluation);
+
+
 
 // getting number of simultaneous tasks (number of lectures in the session except
 // the quiz lecture)
 
-// getting the number of other additional lectures
+let newlectures = []
 
-const evaluation_lecture=lecturesInSession.find(lo=> lo instanceof evaluation).lecture_number;
+for(let lecture of lecturesInSession){
+    if(!learning_sequence.some(check_LO=>
+        check_LO.lecture_number==lecture.lecture_number &&
+        check_LO.created_at.toDate() < lecture.created_at.toDate() 
+        // checking for the learning objective if it was persisted on an earlier date
+    )){
+        newlectures.push(lecture);
+        
 
-const additional_lectures=lecturesInSession.filter(lo=> lo.lecture_number!=evaluation_lecture);
 
-// number of relations of new lectures visited
+    }
+}
 
-ST_relations= additional_lectures.filter(lo=> !previously_visited_LOs.includes(lo)).length;
+ST_relations=newlectures.length - 1; // the number of additional lectures
+
 
 
 ST_pvalue = ST_relations/session_sequence.length-1;
@@ -135,7 +152,8 @@ let CR_pvalue=detectCRPattern(session_sequence);
 
 let ST_pvalue=detectSTPattern(session_sequence);
 
-let RL_pvalue=detectRLPattern(session_sequence);
+//to check with kimo
+//let RL_pvalue=detectRLPattern(session_sequence);
 
 if(LN_pvalue>0){
     number_of_activepts++;
@@ -153,10 +171,10 @@ if(ST_pvalue>0){
 patterns_indcation.push(ST_pvalue);
 }
 
-if(RL_pvalue>0){
-    number_of_activepts++;
-patterns_indcation.push(RL_pvalue);
-}
+// if(RL_pvalue>0){
+//     number_of_activepts++;
+// patterns_indcation.push(RL_pvalue);
+// }
 
 let wmc_indication=0;
 for(let i=0;i<patterns_indcation.length;i++){
@@ -170,39 +188,32 @@ wmc_indication = wmc_indication/number_of_activepts;
 
 let session_wmc = wmc_indication*number_of_activepts;
 
-// add the current session sequence to the previously_visited_LOs
 
-for(let lo of session_sequence){
-
-    if(!previously_visited_LOs.includes(lo)){
-
-        previously_visited_LOs.push(lo);
-    }
 
 
 return session_wmc;
 
 
-}
+
 }
 
 
 // calculate for subject 
 
-export const calculateWMCinSubject = async (subject_reference , numberOfSessionsPerWeek) => {
+export const calculateWMCinSubject = async (subject_id , numberOfSessionsPerWeek) => {
 
     // retriving the previously learned LOs 
-    previousDocs = await getDocs(learningObjectivesCollectionRef);
+    // previousDocs = await getDocs(learningObjectivesCollectionRef);
 
-    previously_visited_LOs = previousDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
-    .filter(lo=> lo.course == subject_reference);
+    // previously_visited_LOs = previousDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
+    // .filter(lo=> lo.course == subject_reference);
 
-//getting getting learning sequence
+//getting learning sequence
 
 learningsessionsDocs = await getDocs(studySessionsCollectionRef);
 
 learning_sessions = learningsessionsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
-.filter(lo=> lo.course == subject_reference);
+.filter(lo=> lo.course == subject_id);
 
 for (let sessions of learning_sessions){
 
@@ -230,23 +241,11 @@ for(let session of targetSessions){
 
 wmc_in_subject=wmc_in_subject/targetSessions.length;
 
-//ensuring all los in sequence are in previously_visited_LOs
 
-for(let session of targetSessions){
-
-for(let lo of session.session_sequence){
-
-    if(!previously_visited_LOs.includes(lo)){
-
-        previously_visited_LOs.push(lo);
-    }
-
-
-}
 
 
 return wmc_in_subject;
-}
+
 }
 
 
@@ -257,8 +256,6 @@ export const calculateStudentWMC = async (student_reference , numberOfStudySessi
     // retriving the previously learned LOs 
     previousDocs = await getDocs(learningObjectivesCollectionRef);
 
-    previously_visited_LOs = previousDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
-    .filter(lo=> lo.course == subject_reference);
 
 //getting getting learning sequence
 
@@ -292,23 +289,6 @@ for(let session of targetSessions){
 
 wmc_student=wmc_student/targetSessions.length;
 
-//ensuring all los in sequence are in previously_visited_LOs
-
-for(let session of targetSessions){
-
-for(let lo of session.session_sequence){
-
-    if(!previously_visited_LOs.includes(lo)){
-
-        previously_visited_LOs.push(lo);
-    }
-
-
-}
-
-
-
-}
 
 return wmc_student;
 
