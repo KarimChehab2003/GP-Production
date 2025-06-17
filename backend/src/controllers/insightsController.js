@@ -13,10 +13,18 @@ export const getInsights = async (req, res) => {
 
         if (insightsDocSnap.exists()) {
             const data = insightsDocSnap.data();
-            res.status(200).json({ completedTasks: data.completedTasks || [] });
+            res.status(200).json({
+                generatedTasks: data.generatedTasks || [],
+                completedTasks: data.completedTasks || [],
+                missedTasks: data.missedTasks || []
+            });
         } else {
-            // If document doesn't exist, return empty array
-            res.status(200).json({ completedTasks: [] });
+            // If document doesn't exist, return empty arrays
+            res.status(200).json({
+                generatedTasks: [],
+                completedTasks: [],
+                missedTasks: []
+            });
         }
     } catch (error) {
         console.error("Error getting insights:", error);
@@ -27,17 +35,21 @@ export const getInsights = async (req, res) => {
 export const updateInsights = async (req, res) => {
     try {
         const { userId } = req.params; // Expect userId from URL params
-        const { completedTasks } = req.body; // Expect completedTasks array in body
+        const { generatedTasks, completedTasks, missedTasks } = req.body; // Expect all arrays in body
 
-        if (!userId || !Array.isArray(completedTasks)) {
-            return res.status(400).json({ error: "User ID and completedTasks array are required." });
+        if (!userId || !Array.isArray(generatedTasks) || !Array.isArray(completedTasks) || !Array.isArray(missedTasks)) {
+            return res.status(400).json({ error: "User ID, generatedTasks, completedTasks, and missedTasks arrays are required." });
         }
 
         const insightsDocRef = doc(weeklyReportCollectionRef, userId);
 
         // Using setDoc with merge: true will create the document if it doesn't exist
         // or update it without overwriting other fields if they exist.
-        await setDoc(insightsDocRef, { completedTasks }, { merge: true });
+        await setDoc(
+            insightsDocRef,
+            { generatedTasks, completedTasks, missedTasks },
+            { merge: true }
+        );
 
         res.status(200).json({ message: "Insights updated successfully.", weeklyReportId: userId });
     } catch (error) {

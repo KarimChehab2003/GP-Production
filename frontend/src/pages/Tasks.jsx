@@ -2,15 +2,13 @@ import { useEffect, useState } from "react";
 import { useTasks } from "../contexts/TasksContext";
 
 function Tasks() {
-  const { tasks } = useTasks();
-  const [generatedTasks, setGeneratedTasks] = useState([]);
+  const { generatedTasks, completedTasks, missedTasks } = useTasks();
+  console.log("generatedTasks:", generatedTasks);
+  console.log("completedTasks:", completedTasks);
+  console.log("missedTasks:", missedTasks);
   const [currentDayStudySessions, setCurrentDayStudySessions] = useState([]);
 
   useEffect(() => {
-    // Filter generated tasks
-    const newGeneratedTasks = tasks.filter((task) => task.type === "generated");
-    setGeneratedTasks(newGeneratedTasks);
-
     // Get current day's study sessions
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     const collegeSchedule = currentUser?.timetable?.schedule;
@@ -39,7 +37,7 @@ function Tasks() {
       }
       setCurrentDayStudySessions(studySessionsToday);
     }
-  }, [tasks]); // Depend on 'tasks' to re-run when new tasks are added
+  }, []);
 
   return (
     <section className="p-6">
@@ -50,7 +48,7 @@ function Tasks() {
         {generatedTasks.length === 0 ? (
           <p className="text-gray-600">No follow-up tasks generated yet.</p>
         ) : (
-          <div classNameN="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {generatedTasks.map((task, idx) => (
               <article
                 key={idx}
@@ -58,6 +56,27 @@ function Tasks() {
               >
                 <p className="font-medium text-lg">{task.subject}</p>
                 {/* You can add more details from the task object if needed */}
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-8">
+        <h3 className="text-xl font-semibold mb-3">Missed Tasks</h3>
+        {missedTasks.length === 0 ? (
+          <p className="text-gray-600">No missed tasks! 🎉</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {missedTasks.map((task, idx) => (
+              <article
+                key={idx}
+                className="p-4 border rounded-md shadow-sm bg-rose-100"
+              >
+                <p className="font-medium text-lg">{task.subject}</p>
+                <p className="text-sm text-gray-500">
+                  {task.day} {task.time}
+                </p>
               </article>
             ))}
           </div>

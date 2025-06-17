@@ -4,18 +4,23 @@ import axios from "axios";
 const TasksContext = createContext();
 
 export function TasksProvider({ children }) {
-  const [tasks, setTasks] = useState([]);
-  const [isTasksLoaded, setIsTasksLoaded] = useState(false); // To prevent saving before initial load
+  const [generatedTasks, setGeneratedTasks] = useState([]);
+  const [completedTasks, setCompletedTasks] = useState([]);
+  const [missedTasks, setMissedTasks] = useState([]);
+  const [isTasksLoaded, setIsTasksLoaded] = useState(false);
+  const [lastCheckedDate, setLastCheckedDate] = useState(null);
 
   // Get userId from localStorage
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const userId = currentUser?.id;
 
+  // Helper to get today's date string (YYYY-MM-DD)
+  const getDateString = (date = new Date()) => date.toISOString().split("T")[0];
+
   // Effect to fetch tasks from backend on component mount
   useEffect(() => {
     const fetchTasks = async () => {
       if (!userId) {
-        console.warn("TasksContext - No user ID found, cannot fetch tasks.");
         setIsTasksLoaded(true);
         return;
       }
@@ -23,71 +28,80 @@ export function TasksProvider({ children }) {
         const response = await axios.get(
           `http://localhost:5100/api/user/insights/${userId}`
         );
-        setTasks(response.data.completedTasks || []);
-        console.log(
-          "TasksContext - Fetched tasks from backend:",
-          response.data.completedTasks || []
-        );
+        // Expecting backend to return { generatedTasks, completedTasks, missedTasks }
+        setGeneratedTasks(response.data.generatedTasks || []);
+        setCompletedTasks(response.data.completedTasks || []);
+        setMissedTasks(response.data.missedTasks || []);
+        setLastCheckedDate(getDateString());
       } catch (error) {
-        console.error(
-          "TasksContext - Failed to fetch tasks from backend:",
-          error
-        );
-        setTasks([]); // Initialize with empty array on error
+        setGeneratedTasks([]);
+        setCompletedTasks([]);
+        setMissedTasks([]);
       } finally {
         setIsTasksLoaded(true);
       }
     };
-
     fetchTasks();
-  }, [userId]); // Re-run if userId changes (e.g., after login/logout)
+  }, [userId]);
 
-  // Effect to save tasks to backend whenever tasks state changes (after initial load)
+  // Effect to save tasks to backend whenever any tasks array changes (after initial load)
   useEffect(() => {
-    if (!isTasksLoaded || !userId) {
-      return; // Don't save if not yet loaded or no user ID
-    }
-
+    if (!isTasksLoaded || !userId) return;
     const saveTasks = async () => {
-      console.log("TasksContext - Saving tasks to backend:", tasks);
       try {
-        const response = await axios.put(
-          `http://localhost:5100/api/user/insights/${userId}`,
-          {
-            completedTasks: tasks,
-          }
-        );
-        console.log("TasksContext - Tasks saved to backend successfully!");
-
-        const { weeklyReportId } = response.data;
-        if (weeklyReportId && currentUser) {
-          const updatedUser = { ...currentUser, weekly_report: weeklyReportId };
-
-          localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-
-          // Also update the user in the database with the weeklyReportId
-          await axios.put(`http://localhost:5100/api/quiz/update-user`, {
-            userId,
-            weekly_report: weeklyReportId,
-          });
-        }
+        await axios.put(`http://localhost:5100/api/user/insights/${userId}`, {
+          generatedTasks,
+          completedTasks,
+          missedTasks,
+        });
       } catch (error) {
-        console.error("TasksContext - Failed to save tasks to backend:", error);
+        // Handle error
       }
     };
-
-    // Debounce or throttle this if tasks update very frequently
     const handler = setTimeout(() => {
       saveTasks();
-    }, 500); // Save after 500ms of no changes
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [generatedTasks, completedTasks, missedTasks, isTasksLoaded, userId]);
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [tasks, isTasksLoaded, userId]); // Depend on tasks, load status, and userId
+  // Effect to check for missed tasks at the start of a new day
+  useEffect(() => {
+    if (!isTasksLoaded) return;
+    const today = getDateString();
+    if (lastCheckedDate !== today) {
+      // Find generated tasks from previous day(s) that are not completed
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = getDateString(yesterday);
+      const missed = generatedTasks.filter(
+        (task) =>
+          task.day === yesterdayStr &&
+          !completedTasks.some(
+            (ct) =>
+              ct.id === task.id ||
+              (ct.subject === task.subject &&
+                ct.day === task.day &&
+                ct.time === task.time)
+          )
+      );
+      if (missed.length > 0) {
+        setMissedTasks((prev) => [...prev, ...missed]);
+      }
+      setLastCheckedDate(today);
+    }
+  }, [isTasksLoaded, lastCheckedDate, generatedTasks, completedTasks]);
 
   return (
-    <TasksContext.Provider value={{ tasks, setTasks }}>
+    <TasksContext.Provider
+      value={{
+        generatedTasks,
+        setGeneratedTasks,
+        completedTasks,
+        setCompletedTasks,
+        missedTasks,
+        setMissedTasks,
+      }}
+    >
       {children}
     </TasksContext.Provider>
   );

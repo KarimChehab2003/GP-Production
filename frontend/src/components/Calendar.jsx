@@ -2,7 +2,7 @@ import Slot from "./Slot";
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-function Calendar({ setTaskList }) {
+function Calendar({ setTaskList, ignoreSlotRestrictions = false }) {
   const days = [
     "Sunday",
     "Monday",
@@ -40,6 +40,8 @@ function Calendar({ setTaskList }) {
 
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     const collegeSchedule = currentUser?.timetable?.schedule;
+
+    console.log("This is college schedule:", collegeSchedule);
 
     if (collegeSchedule) {
       Object.entries(collegeSchedule).forEach(([day, schedule]) => {
@@ -107,45 +109,20 @@ function Calendar({ setTaskList }) {
     []
   );
 
-  const currentDayName = days[new Date().getDay()];
-
   return (
-    <div className="grid grid-cols-8 h-full">
+    <div className="grid grid-cols-8 gap-1 h-full">
       {calendarData.map((row, i) =>
         row.map((col, j) => {
-          let slotType = "default";
-          let isCurrentDay = false;
+          const slotType = i === 0 ? "day" : j === 0 ? "timeslot" : "slot";
+          const isCurrentDay = days[j - 1] === days[new Date().getDay()];
           let sessionCategory = "empty";
           let modalEventType = "";
           let modalSubject = "";
           let modalLectureNumber = null;
-          let modalDay = days[j - 1]; // Current day for the slot
-          let modalTime = timeslots[i - 1]; // Current timeslot for the slot
+          let modalDay = days[j - 1];
+          let modalTime = timeslots[i - 1];
 
-          if (i === 0 && j === 0) {
-            // Top-left empty corner
-            return <Slot key={`${i}-${j}`} content={col} type={slotType} />;
-          } else if (i === 0) {
-            // Day headers
-            slotType = "day";
-            isCurrentDay = col === currentDayName;
-            return (
-              <Slot
-                key={`${i}-${j}`}
-                content={col}
-                type={slotType}
-                isCurrentDay={isCurrentDay}
-              />
-            );
-          } else if (j === 0) {
-            // Time slot headers
-            slotType = "timeslot";
-            return <Slot key={`${i}-${j}`} content={col} type={slotType} />;
-          } else {
-            // Schedule slots
-            slotType = "slot";
-            isCurrentDay = calendarData[0][j] === currentDayName; // Check if current day for the column
-
+          if (col) {
             const content = col;
             if (content.startsWith("Study:")) {
               sessionCategory = "study";
@@ -176,23 +153,25 @@ function Calendar({ setTaskList }) {
               sessionCategory = "empty";
               modalEventType = "";
             }
-            return (
-              <Slot
-                key={`${i}-${j}`}
-                content={col}
-                type={slotType}
-                isCurrentDay={isCurrentDay}
-                sessionCategory={sessionCategory}
-                setTaskList={setTaskList}
-                modalEventType={modalEventType}
-                modalSubject={modalSubject}
-                modalLectureNumber={modalLectureNumber}
-                modalDay={modalDay}
-                modalTime={modalTime}
-                onRemoveQuizSession={handleRemoveQuizSession} // Pass the callback
-              />
-            );
           }
+
+          return (
+            <Slot
+              key={`${i}-${j}`}
+              content={col}
+              type={slotType}
+              isCurrentDay={isCurrentDay}
+              sessionCategory={sessionCategory}
+              setTaskList={setTaskList}
+              modalEventType={modalEventType}
+              modalSubject={modalSubject}
+              modalLectureNumber={modalLectureNumber}
+              modalDay={modalDay}
+              modalTime={modalTime}
+              onRemoveQuizSession={handleRemoveQuizSession}
+              ignoreSlotRestrictions={ignoreSlotRestrictions}
+            />
+          );
         })
       )}
     </div>

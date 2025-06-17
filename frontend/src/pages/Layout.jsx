@@ -8,13 +8,14 @@ import Insights from "./Insights";
 
 function Layout() {
   const [currentUser, setCurrentUser] = useState({});
+  const [ignoreSlotRestrictions, setIgnoreSlotRestrictions] = useState(false);
 
   useEffect(() => {
     setCurrentUser(JSON.parse(localStorage.getItem("currentUser")) || {});
   }, []);
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-indigo-500 flex justify-between items-center text-white py-4 px-8">
         <p className="text-2xl font-semibold">ASPG</p>
@@ -31,15 +32,27 @@ function Layout() {
 
         {/* Main Content */}
         <main className="flex-1 p-6 bg-gray-50">
+          <button
+            onClick={() => setIgnoreSlotRestrictions((prev) => !prev)}
+            className="mb-2 px-4 py-2 bg-yellow-400 rounded cursor-pointer"
+          >
+            {ignoreSlotRestrictions ? "Disable" : "Enable"} Slot Click
+            Restrictions (added this button for testing purposes)
+          </button>
           <Routes>
-            <Route path="study-plan" element={<Calendar />} />
+            <Route
+              path="study-plan"
+              element={
+                <Calendar ignoreSlotRestrictions={ignoreSlotRestrictions} />
+              }
+            />
             <Route path="tasks" element={<Tasks />} />
             <Route path="insights" element={<Insights />} />
             <Route path="*" element={<Navigate to="study-plan" replace />} />
           </Routes>
         </main>
       </div>
-    </main>
+    </div>
   );
 }
 

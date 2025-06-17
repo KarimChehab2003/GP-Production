@@ -79,24 +79,6 @@ const LectureForm = React.memo(function LectureForm({
       <div className="mt-4">
         <label
           className="block text-gray-700 font-medium mb-2"
-          htmlFor={`status-${index}`}
-        >
-          Did you finish studying this lecture?
-        </label>
-        <select
-          id={`status-${index}`}
-          className="w-full border border-gray-300 rounded-lg p-2 outline-none focus:border-indigo-500 transition duration-300"
-          onChange={(e) => onLectureChange(index, "status", e.target.value)}
-        >
-          <option hidden>Select</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </div>
-
-      <div className="mt-4">
-        <label
-          className="block text-gray-700 font-medium mb-2"
           htmlFor={`file-${index}`}
         >
           Upload lecture material (pptx or pdf)

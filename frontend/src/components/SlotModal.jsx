@@ -13,7 +13,7 @@ function SlotModal({
   modalTime,
   onRemoveQuizSession,
 }) {
-  const { setTasks } = useTasks();
+  const { setCompletedTasks, setGeneratedTasks } = useTasks();
   const memoizedOnClose = useCallback(onClose, [onClose]);
   const eventType =
     type === "Lec"
@@ -31,45 +31,22 @@ function SlotModal({
     day: modalDay,
     time: modalTime,
     timestamp: Date.now(),
+    number: null,
   });
 
   const handleClick = () => {
-    setTasks((prevTasks) => [...prevTasks, formDetails]);
-
+    setCompletedTasks((prev) => [...prev, formDetails]);
     if (eventType === "lecture" || eventType === "section") {
-      const {
-        subject: completedSubject,
-        number: lectureNumber,
-        status,
-      } = formDetails;
-
-      let generatedTaskDescription = "";
-      if (status === "fully") {
-        const numOnly = lectureNumber
-          ? lectureNumber.replace(eventType + " ", "")
-          : "";
-        generatedTaskDescription = `Study ${eventType} ${numOnly} from ${completedSubject} in the next study session`;
-      } else if (status === "partially") {
-        const numOnly = lectureNumber
-          ? lectureNumber.replace(eventType + " ", "")
-          : "";
-        generatedTaskDescription = `Review ${eventType} ${numOnly} from ${completedSubject} in the next study session`;
-      }
-
-      if (generatedTaskDescription) {
-        setTasks((prevTasks) => [
-          ...prevTasks,
-          {
-            subject: generatedTaskDescription,
-            type: "generated",
-            originalEventType: eventType,
-            originalSubject: completedSubject,
-            originalLectureNumber: lectureNumber,
-            originalStatus: status,
-            timestamp: Date.now(),
-          },
-        ]);
-      }
+      const followUpTask = {
+        type: "generated",
+        subject: `Study ${formDetails.number || ""} in ${
+          formDetails.subject
+        } in your next study session`,
+        day: formDetails.day,
+        time: formDetails.time,
+        timestamp: Date.now(),
+      };
+      setGeneratedTasks((prev) => [...prev, followUpTask]);
     }
     onClose();
   };
@@ -107,6 +84,8 @@ function SlotModal({
             subject={subject}
             onCloseModal={memoizedOnClose}
             modalQuizLectureNumber={modalLectureNumber}
+            modalDay={modalDay}
+            modalTime={modalTime}
           />
         )}
         {eventType === "retryQuiz" && (

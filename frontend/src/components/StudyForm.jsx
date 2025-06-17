@@ -9,13 +9,15 @@ function StudyForm({
   subject,
   onCloseModal,
   modalQuizLectureNumber,
+  modalDay,
+  modalTime,
 }) {
-  const { setTasks } = useTasks(); // Use the hook here
+  const { setTasks, setCompletedTasks } = useTasks(); // Use the hook here
   const [lectureCount, setLectureCount] = useState(1);
   const [lectureDetails, setLectureDetails] = useState(
     modalQuizLectureNumber
-      ? [{ number: modalQuizLectureNumber, status: "", file: null, quiz: null }]
-      : [{ number: 1, status: "", file: null, quiz: null }] // Initialize with one lecture by default
+      ? [{ number: modalQuizLectureNumber, file: null, quiz: null }]
+      : [{ number: 1, file: null, quiz: null }] // Initialize with one lecture by default
   );
   const [error, setError] = useState(null);
   const [currentSessionNumber, setCurrentSessionNumber] = useState(1);
@@ -129,6 +131,21 @@ function StudyForm({
       if (!courseId) {
         throw new Error("Course ID not found. Cannot submit study session.");
       }
+
+      // Record the study session completion in tasks context
+      const studyTask = {
+        type: "study",
+        subject: subject.replace(/^Study:\s*/, "").trim(),
+        day: modalDay,
+        time: modalTime,
+        timestamp: Date.now(),
+        completed: true,
+      };
+
+      setCompletedTasks((prev) => {
+        const newTasks = [...prev, studyTask];
+        return newTasks;
+      });
 
       const learningObjectiveIds = [];
       const evaluationIds = [];
@@ -279,7 +296,7 @@ function StudyForm({
     setLectureCount((prev) => prev + 1);
     setLectureDetails((prevDetails) => [
       ...prevDetails,
-      { number: null, status: "", file: null, quiz: null },
+      { number: null, file: null, quiz: null },
     ]);
   };
 

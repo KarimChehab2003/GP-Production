@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 function Insights() {
-  const { tasks } = useTasks();
+  const { completedTasks, generatedTasks, missedTasks } = useTasks();
   const [completionByType, setCompletionByType] = useState({});
   const [progressBySubject, setProgressBySubject] = useState({});
   const [completionVsSchedule, setCompletionVsSchedule] = useState({});
@@ -31,10 +31,8 @@ function Insights() {
   });
 
   useEffect(() => {
-    console.log("Insights - All tasks from context:", tasks);
-
     // Calculate Completion by Type
-    const typeCounts = tasks.reduce((acc, task) => {
+    const typeCounts = completedTasks.reduce((acc, task) => {
       if (task.type === "lecture") {
         acc.lecture = (acc.lecture || 0) + 1;
       } else if (task.type === "section") {
@@ -42,7 +40,6 @@ function Insights() {
       } else if (task.type === "study") {
         acc.study = (acc.study || 0) + 1;
       } else if (task.type === "quiz-outcome") {
-        // Count all quiz outcomes as 'quiz' type for this chart
         acc.quiz = (acc.quiz || 0) + 1;
       }
       return acc;
@@ -50,7 +47,7 @@ function Insights() {
     setCompletionByType(typeCounts);
 
     // Calculate Progress within Subject/Course
-    const subjectProgress = tasks.reduce((acc, task) => {
+    const subjectProgress = completedTasks.reduce((acc, task) => {
       if (task.type === "lecture" || task.type === "section") {
         if (!acc[task.subject]) {
           acc[task.subject] = new Set();
@@ -75,22 +72,17 @@ function Insights() {
     if (collegeSchedule) {
       let totalScheduledSessions = 0;
       let completedScheduledSessions = 0;
-      const completedSessionKeys = new Set(); // To track unique completed sessions
-
-      // Create a unique key for each completed session
-      tasks.forEach((task) => {
+      const completedSessionKeys = new Set();
+      completedTasks.forEach((task) => {
         if (
           task.type === "lecture" ||
           task.type === "section" ||
           task.type === "study"
         ) {
-          // Using day, time, and subject to identify a scheduled slot
           const key = `${task.day}-${task.time}-${task.subject}`;
           completedSessionKeys.add(key);
         }
       });
-
-      // Iterate through the college schedule to compare
       for (const day in collegeSchedule) {
         const daySchedule = collegeSchedule[day];
         for (const time in daySchedule) {
@@ -111,7 +103,6 @@ function Insights() {
           }
         }
       }
-
       const percentage =
         totalScheduledSessions > 0
           ? (
@@ -119,7 +110,6 @@ function Insights() {
               100
             ).toFixed(2)
           : "0.00";
-
       setCompletionVsSchedule({
         total: totalScheduledSessions,
         completed: completedScheduledSessions,
@@ -128,12 +118,11 @@ function Insights() {
     }
 
     // Calculate Quiz Performance (Pass/Fail Ratio and basic trends)
-    const quizOutcomes = tasks.filter((task) => task.type === "quiz-outcome");
-    console.log("Insights - Quiz outcomes:", quizOutcomes);
-
+    const quizOutcomes = completedTasks.filter(
+      (task) => task.type === "quiz-outcome"
+    );
     let passedQuizzes = 0;
     let failedQuizzes = 0;
-
     quizOutcomes.forEach((quiz) => {
       if (quiz.status === "passed") {
         passedQuizzes++;
@@ -141,13 +130,11 @@ function Insights() {
         failedQuizzes++;
       }
     });
-
     const totalQuizzes = passedQuizzes + failedQuizzes;
     const passRate =
       totalQuizzes > 0
         ? ((passedQuizzes / totalQuizzes) * 100).toFixed(2)
         : "0.00";
-
     setQuizPerformance({
       total: totalQuizzes,
       passed: passedQuizzes,
@@ -155,37 +142,53 @@ function Insights() {
       passRate: passRate,
       recentOutcomes: quizOutcomes
         .sort((a, b) => b.timestamp - a.timestamp)
-        .slice(0, 5), // Get 5 most recent for basic trend
+        .slice(0, 5),
     });
 
     // Calculate Cumulative Sessions Completed
-    const completedSessions = tasks.filter(
+    const completedSessions = completedTasks.filter(
       (task) =>
         task.type === "lecture" ||
         task.type === "section" ||
         task.type === "study"
     );
-
     completedSessions.sort((a, b) => a.timestamp - b.timestamp);
-
     const dailyCounts = {};
     completedSessions.forEach((task) => {
-      const date = new Date(task.timestamp).toLocaleDateString(); // e.g., "6/16/2025"
+      const date = new Date(task.timestamp).toLocaleDateString();
       dailyCounts[date] = (dailyCounts[date] || 0) + 1;
     });
-
     let cumulativeCount = 0;
     const dataForChart = Object.keys(dailyCounts).map((date) => {
       cumulativeCount += dailyCounts[date];
       return { date, sessions: cumulativeCount };
     });
     setCumulativeSessionsData(dataForChart);
-  }, [tasks]); // Depend on 'tasks' to re-run when new tasks are added
+  }, [completedTasks, generatedTasks, missedTasks]);
 
   return (
     <section className="p-6">
       <h2 className="text-3xl font-bold mb-6">My Learning Insights</h2>
-
+      <div className="mb-8">
+        <h3 className="text-xl font-semibold mb-3">Missed Tasks</h3>
+        {missedTasks.length === 0 ? (
+          <p className="text-gray-600">No missed tasks! 🎉</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {missedTasks.map((task, idx) => (
+              <article
+                key={idx}
+                className="p-4 border rounded-md shadow-sm bg-rose-100"
+              >
+                <p className="font-medium text-lg">{task.subject}</p>
+                <p className="text-sm text-gray-500">
+                  {task.day} {task.time}
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sessions Completed by Type (Bar Chart) */}
         <div className="bg-white p-6 rounded-lg shadow-md flex justify-center flex-col items-center">
