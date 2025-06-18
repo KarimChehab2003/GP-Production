@@ -1,30 +1,33 @@
 import { weeklyReportCollectionRef } from "../config/dbCollections.js";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
+// Helper: filter only week fields (e.g., 'week of xx/xx/xxxx')
+function extractWeekFields(data) {
+    const weekRegex = /^week of \d{2}\/\d{2}\/\d{4}$/;
+    const result = {};
+    for (const key in data) {
+        if (weekRegex.test(key)) {
+            result[key] = data[key];
+        }
+    }
+    return result;
+}
+
 export const getInsights = async (req, res) => {
     try {
-        const { userId } = req.params; // Expect userId from URL params
+        const { userId } = req.params;
         if (!userId) {
             return res.status(400).json({ error: "User ID is required." });
         }
-
         const insightsDocRef = doc(weeklyReportCollectionRef, userId);
         const insightsDocSnap = await getDoc(insightsDocRef);
-
         if (insightsDocSnap.exists()) {
             const data = insightsDocSnap.data();
-            res.status(200).json({
-                generatedTasks: data.generatedTasks || [],
-                completedTasks: data.completedTasks || [],
-                missedTasks: data.missedTasks || []
-            });
+            // Return only week fields
+            const weekFields = extractWeekFields(data);
+            res.status(200).json(weekFields);
         } else {
-            // If document doesn't exist, return empty arrays
-            res.status(200).json({
-                generatedTasks: [],
-                completedTasks: [],
-                missedTasks: []
-            });
+            res.status(200).json({});
         }
     } catch (error) {
         console.error("Error getting insights:", error);
@@ -34,23 +37,15 @@ export const getInsights = async (req, res) => {
 
 export const updateInsights = async (req, res) => {
     try {
-        const { userId } = req.params; // Expect userId from URL params
-        const { generatedTasks, completedTasks, missedTasks } = req.body; // Expect all arrays in body
-
-        if (!userId || !Array.isArray(generatedTasks) || !Array.isArray(completedTasks) || !Array.isArray(missedTasks)) {
-            return res.status(400).json({ error: "User ID, generatedTasks, completedTasks, and missedTasks arrays are required." });
+        const { userId } = req.params;
+        // The body should be the week object directly (e.g., { 'week of 15/06/2025': {...} })
+        const weekObject = req.body;
+        if (!userId || typeof weekObject !== "object" || Array.isArray(weekObject)) {
+            return res.status(400).json({ error: "User ID and week object are required." });
         }
-
+        // Merge the week object at the root
         const insightsDocRef = doc(weeklyReportCollectionRef, userId);
-
-        // Using setDoc with merge: true will create the document if it doesn't exist
-        // or update it without overwriting other fields if they exist.
-        await setDoc(
-            insightsDocRef,
-            { generatedTasks, completedTasks, missedTasks },
-            { merge: true }
-        );
-
+        await setDoc(insightsDocRef, weekObject, { merge: true });
         res.status(200).json({ message: "Insights updated successfully.", weeklyReportId: userId });
     } catch (error) {
         console.error("Error updating insights:", error);

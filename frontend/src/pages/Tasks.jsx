@@ -63,27 +63,6 @@ function Tasks() {
       </div>
 
       <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-3">Missed Tasks</h3>
-        {missedTasks.length === 0 ? (
-          <p className="text-gray-600">No missed tasks! 🎉</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {missedTasks.map((task, idx) => (
-              <article
-                key={idx}
-                className="p-4 border rounded-md shadow-sm bg-rose-100"
-              >
-                <p className="font-medium text-lg">{task.subject}</p>
-                <p className="text-sm text-gray-500">
-                  {task.day} {task.time}
-                </p>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
         <h3 className="text-xl font-semibold mb-3">
           Today's Study Sessions (
           {new Date().toLocaleDateString("en-US", {
@@ -107,6 +86,26 @@ function Tasks() {
                 <p className="font-medium text-lg">
                   {session.time}: {session.subject}
                 </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-8">
+        <h3 className="text-xl font-semibold mb-3">Missed Tasks</h3>
+        {missedTasks.length === 0 ? (
+          <p className="text-gray-600">No missed tasks! 🎉</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {missedTasks.map((task, idx) => (
+              <article
+                key={idx}
+                className="p-4 border rounded-md shadow-sm bg-rose-100"
+              >
+                <p className="font-medium text-lg">{task.subject}</p>
+                <p className="text-sm text-gray-500">Day: {task.day}</p>
+                <p className="text-sm text-gray-500">Time: {task.time}</p>
               </article>
             ))}
           </div>

@@ -166,29 +166,112 @@ function Insights() {
     setCumulativeSessionsData(dataForChart);
   }, [completedTasks, generatedTasks, missedTasks]);
 
+  // --- Missed Task Metrics ---
+  const missedCount = missedTasks.length;
+  const completedCount = completedTasks.filter(
+    (task) =>
+      task.type === "lecture" ||
+      task.type === "section" ||
+      task.type === "study"
+  ).length;
+  const totalTracked = missedCount + completedCount;
+  const missedRate =
+    totalTracked > 0 ? ((missedCount / totalTracked) * 100).toFixed(1) : 0;
+
+  // Pie chart data for missed vs completed
+  const missedVsCompletedData = [
+    { name: "Completed", value: completedCount },
+    { name: "Missed", value: missedCount },
+  ];
+  const pieColors = ["#34d399", "#f87171"];
+
+  // Missed tasks over time (by day)
+  const missedByDay = {};
+  missedTasks.forEach((task) => {
+    const date = task.day;
+    missedByDay[date] = (missedByDay[date] || 0) + 1;
+  });
+  const missedByDayData = Object.keys(missedByDay).map((date) => ({
+    date,
+    missed: missedByDay[date],
+  }));
+
   return (
     <section className="p-6">
       <h2 className="text-3xl font-bold mb-6">My Learning Insights</h2>
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-3">Missed Tasks</h3>
-        {missedTasks.length === 0 ? (
-          <p className="text-gray-600">No missed tasks! 🎉</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {missedTasks.map((task, idx) => (
-              <article
-                key={idx}
-                className="p-4 border rounded-md shadow-sm bg-rose-100"
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6 place-items-center text-center">
+        <div className="bg-white p-6 rounded-lg shadow flex flex-col items-center justify-center w-full ">
+          <span className="text-4xl font-bold text-rose-500">
+            {missedCount}
+          </span>
+          <span className="text-lg text-gray-700 mt-2">Missed Tasks</span>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow flex flex-col items-center justify-center w-full ">
+          <span className="text-4xl font-bold text-indigo-500">
+            {missedRate}%
+          </span>
+          <span className="text-lg text-gray-700 mt-2">
+            Percentage of All Sessions Missed
+          </span>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow flex flex-col items-center justify-center w-full ">
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={missedVsCompletedData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={70}
+                label
               >
-                <p className="font-medium text-lg">{task.subject}</p>
-                <p className="text-sm text-gray-500">
-                  {task.day} {task.time}
-                </p>
-              </article>
-            ))}
-          </div>
+                {missedVsCompletedData.map((entry, idx) => (
+                  <Cell key={`cell-${idx}`} fill={pieColors[idx]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+          <span className="text-lg text-gray-700 mt-2">
+            Missed vs Completed
+          </span>
+        </div>
+      </div>
+      {/* Missed Tasks Over Time */}
+      <div className="mb-8 bg-white p-6 rounded-lg shadow flex flex-col items-center">
+        <h3 className="text-xl font-semibold mb-4">Missed Tasks Over Time</h3>
+        {missedByDayData.length === 0 ? (
+          <p className="text-gray-600">No missed tasks recorded yet.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart
+              data={missedByDayData}
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="colorMissed" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f87171" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" />
+              <YAxis allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" />
+              <Tooltip />
+              <Area
+                type="monotone"
+                dataKey="missed"
+                stroke="#f87171"
+                fillOpacity={1}
+                fill="url(#colorMissed)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         )}
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sessions Completed by Type (Bar Chart) */}
         <div className="bg-white p-6 rounded-lg shadow-md flex justify-center flex-col items-center">

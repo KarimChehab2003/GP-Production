@@ -23,9 +23,9 @@ function Layout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-indigo-500 flex justify-between items-center text-white py-4 px-8">
+      <header className="bg-indigo-500 flex justify-between items-center text-white py-4 px-8 flex-shrink-0">
         <p className="text-2xl font-semibold">ASPG</p>
         <div className="flex justify-center items-center space-x-4">
           <p>Welcome, {currentUser.fname + " " + currentUser.lname}</p>
@@ -34,12 +34,15 @@ function Layout() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Navigation */}
-        <SideNav setIsSettingsModalOpen={setIsSettingsModalOpen} setSettingsModalType={setSettingsModalType} />
+        <SideNav
+          setIsSettingsModalOpen={setIsSettingsModalOpen}
+          setSettingsModalType={setSettingsModalType}
+        />
 
         {/* Main Content */}
-        <main className="flex-1 p-6 bg-gray-50">
+        <main className="flex-1 p-6 bg-gray-50 overflow-y-auto">
           <button
             onClick={() => setIgnoreSlotRestrictions((prev) => !prev)}
             className="mb-2 px-4 py-2 bg-yellow-400 rounded cursor-pointer"
@@ -69,7 +72,6 @@ function Layout() {
               enrolledCourses={currentUser.courses}
             />
           )}
-
         </main>
       </div>
     </div>

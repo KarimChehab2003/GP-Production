@@ -3,6 +3,7 @@ import LectureSectionForm from "./LectureSectionForm";
 import StudyForm from "./StudyForm";
 import RetryQuizForm from "./RetryQuizForm";
 import { useTasks } from "../contexts/TasksContext";
+import { getWeekKey } from "../contexts/TasksContext";
 
 function SlotModal({
   onClose,
@@ -12,8 +13,11 @@ function SlotModal({
   modalDay,
   modalTime,
   onRemoveQuizSession,
+  slotDate,
+  weekStart,
 }) {
-  const { setCompletedTasks, setGeneratedTasks } = useTasks();
+  const { setCompletedTasks, setGeneratedTasks, setCompletedTasksForWeek } =
+    useTasks();
   const memoizedOnClose = useCallback(onClose, [onClose]);
   const eventType =
     type === "Lec"
@@ -28,14 +32,15 @@ function SlotModal({
   const [formDetails, setFormDetails] = useState({
     subject: subject,
     type: eventType,
-    day: modalDay,
+    day: slotDate,
     time: modalTime,
     timestamp: Date.now(),
     number: null,
   });
 
   const handleClick = () => {
-    setCompletedTasks((prev) => [...prev, formDetails]);
+    const weekKey = getWeekKey(new Date(formDetails.day));
+    setCompletedTasksForWeek(weekKey, (prev) => [...prev, formDetails]);
     if (eventType === "lecture" || eventType === "section") {
       const followUpTask = {
         type: "generated",
@@ -69,6 +74,7 @@ function SlotModal({
             eventType={eventType}
             subject={subject}
             setFormDetails={setFormDetails}
+            weekStart={weekStart}
           />
         )}
         {eventType === "section" && (
@@ -76,6 +82,7 @@ function SlotModal({
             eventType={eventType}
             subject={subject}
             setFormDetails={setFormDetails}
+            weekStart={weekStart}
           />
         )}
         {eventType === "study" && (
@@ -86,6 +93,8 @@ function SlotModal({
             modalQuizLectureNumber={modalLectureNumber}
             modalDay={modalDay}
             modalTime={modalTime}
+            slotDate={slotDate}
+            weekStart={weekStart}
           />
         )}
         {eventType === "retryQuiz" && (
