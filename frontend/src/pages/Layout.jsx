@@ -66,6 +66,7 @@ function Layout() {
               conflicts={currentUser.timetable.conflicts}
               externalActivities={currentUser.extracurricularActivities}
               takesExternalActivities={currentUser.takesCurricularActivities}
+              enrolledCourses={currentUser.courses}
             />
           )}
 

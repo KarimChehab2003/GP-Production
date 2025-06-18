@@ -1,13 +1,14 @@
 import { useCallback } from "react";
 import Conflicts from "./Conflicts";
 import ExternalActivities from "./ExternalActivities";
+import CollegeSchedule from "./CollegeSchedule";
 
 function SettingsModal({
   onClose,
   type,
   externalActivities,
   takesExternalActivities,
-  collegeSchedule,
+  enrolledCourses,
   conflicts,
 }) {
   const memoizedOnClose = useCallback(onClose, [onClose]);
@@ -30,7 +31,7 @@ function SettingsModal({
             <Conflicts conflicts={conflicts} />
           )}
           {type === "collegeSchedule" && (
-            <h1>college schedule</h1>
+            <CollegeSchedule enrolledCourses={enrolledCourses} />
           )}
           {type === "externalActivities" && (
             <ExternalActivities 
