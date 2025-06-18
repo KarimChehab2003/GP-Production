@@ -1,4 +1,5 @@
-import { Timestamp } from 'firebase/firestore';
+import { getDocs, Timestamp } from 'firebase/firestore';
+import { learningObjectivesCollectionRef } from '../config/dbCollections';
 class Learning_Objective
 {
     constructor(course,lecture_number,sessionNumber,created_at){
@@ -24,6 +25,9 @@ constructor(lecture_number,sessionNumber,created_at){
 }
 // the whole learning sequence 
 var learning_sequence =[]
+
+// the set of learning_objectives
+var persisted_learning_objectives=[]
 
 // sort helper function
 function sortByDate(sequence) {
@@ -73,7 +77,7 @@ return LNpvalue;
 function detectCRPattern(session_sequence){
     let already_visited=0;
 for(let LO in session_sequence){
-    if (learning_sequence.some(check_LO=>
+    if (persisted_learning_objectives.some(check_LO=>
         check_LO.lecture_number==LO.lecture_number &&
         check_LO.created_at.toDate() < LO.created_at.toDate() 
         // checking for the learning objective if it was persisted on an earlier date
@@ -108,7 +112,7 @@ let lecturesInSession= session_sequence.filter(lo=> lo instanceof Learning_Objec
 
 
 for(let lecture of lecturesInSession){
-    if(!learning_sequence.some(check_LO=>
+    if(!persisted_learning_objectives.some(check_LO=>
         check_LO.lecture_number==lecture.lecture_number &&
         check_LO.created_at.toDate() < lecture.created_at.toDate() 
         // checking for the learning objective if it was persisted on an earlier date
@@ -221,7 +225,15 @@ export const calculateWMCinSubject = async (subject_id , numberOfSessionsPerWeek
 learningsessionsDocs = await getDocs(studySessionsCollectionRef);
 
 learning_sessions = learningsessionsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
-.filter(lo=> lo.course == subject_id);
+.filter(session=> session.course == subject_id);
+
+
+// getting the course specific LOs
+
+learningObjectivesDocs = await getDocs(learningObjectivesCollectionRef)
+
+persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
+.filter(LO=> LO.course == subject_id);
 
 for (let sessions of learning_sessions){
 
@@ -260,12 +272,15 @@ return wmc_in_subject;
 
 
 export const calculateStudentWMC = async (student_reference , numberOfStudySessions) =>{
+// getting the course specific LOs
 
-    // retriving the previously learned LOs 
-    previousDocs = await getDocs(learningObjectivesCollectionRef);
+learningObjectivesDocs = await getDocs(learningObjectivesCollectionRef)
+
+persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
 
 
-//getting getting learning sequence
+
+//getting learning sequence
 
 learningsessionsDocs = await getDocs(studySessionsCollectionRef);
 
