@@ -271,7 +271,7 @@ return wmc_in_subject;
 
 
 
-export const calculateStudentWMC = async (student_reference , numberOfStudySessions) =>{
+export const calculateStudentWMC = async ( numberOfStudySessions) =>{
 // getting the course specific LOs
 
 learningObjectivesDocs = await getDocs(learningObjectivesCollectionRef)
