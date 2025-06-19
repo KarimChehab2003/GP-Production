@@ -5,7 +5,7 @@ import { IoIosSettings } from "react-icons/io";
 import { GoGraph } from "react-icons/go";
 import { NavLink } from "react-router-dom";
 
-function SideNav() {
+function SideNav({ setIsSettingsModalOpen, setSettingsModalType }) {
   const [date, setDate] = useState(new Date());
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const navigate = useNavigate();
@@ -87,10 +87,34 @@ function SideNav() {
                 <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
                   My Profile
                 </button>
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                <button 
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setIsSettingsModalOpen(true);
+                    setShowSettingsDropdown(false);
+                    setSettingsModalType("conflicts");
+                  }}
+                >
+                  Schedule Conflicts
+                </button>
+                <button 
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setIsSettingsModalOpen(true);
+                    setShowSettingsDropdown(false);
+                    setSettingsModalType("collegeSchedule");
+                  }}
+                >
                   Change My College Schedule
                 </button>
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                <button 
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setIsSettingsModalOpen(true);
+                    setShowSettingsDropdown(false);
+                    setSettingsModalType("externalActivities");
+                  }}
+                >
                   Change My External Activities
                 </button>
                 <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick = {() => logout()}>

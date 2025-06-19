@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 function Insights() {
-  const { tasks } = useTasks();
+  const { completedTasks, generatedTasks, missedTasks } = useTasks();
   const [completionByType, setCompletionByType] = useState({});
   const [progressBySubject, setProgressBySubject] = useState({});
   const [completionVsSchedule, setCompletionVsSchedule] = useState({});
@@ -31,10 +31,8 @@ function Insights() {
   });
 
   useEffect(() => {
-    console.log("Insights - All tasks from context:", tasks);
-
     // Calculate Completion by Type
-    const typeCounts = tasks.reduce((acc, task) => {
+    const typeCounts = completedTasks.reduce((acc, task) => {
       if (task.type === "lecture") {
         acc.lecture = (acc.lecture || 0) + 1;
       } else if (task.type === "section") {
@@ -42,7 +40,6 @@ function Insights() {
       } else if (task.type === "study") {
         acc.study = (acc.study || 0) + 1;
       } else if (task.type === "quiz-outcome") {
-        // Count all quiz outcomes as 'quiz' type for this chart
         acc.quiz = (acc.quiz || 0) + 1;
       }
       return acc;
@@ -50,7 +47,7 @@ function Insights() {
     setCompletionByType(typeCounts);
 
     // Calculate Progress within Subject/Course
-    const subjectProgress = tasks.reduce((acc, task) => {
+    const subjectProgress = completedTasks.reduce((acc, task) => {
       if (task.type === "lecture" || task.type === "section") {
         if (!acc[task.subject]) {
           acc[task.subject] = new Set();
@@ -75,22 +72,17 @@ function Insights() {
     if (collegeSchedule) {
       let totalScheduledSessions = 0;
       let completedScheduledSessions = 0;
-      const completedSessionKeys = new Set(); // To track unique completed sessions
-
-      // Create a unique key for each completed session
-      tasks.forEach((task) => {
+      const completedSessionKeys = new Set();
+      completedTasks.forEach((task) => {
         if (
           task.type === "lecture" ||
           task.type === "section" ||
           task.type === "study"
         ) {
-          // Using day, time, and subject to identify a scheduled slot
           const key = `${task.day}-${task.time}-${task.subject}`;
           completedSessionKeys.add(key);
         }
       });
-
-      // Iterate through the college schedule to compare
       for (const day in collegeSchedule) {
         const daySchedule = collegeSchedule[day];
         for (const time in daySchedule) {
@@ -111,7 +103,6 @@ function Insights() {
           }
         }
       }
-
       const percentage =
         totalScheduledSessions > 0
           ? (
@@ -119,7 +110,6 @@ function Insights() {
               100
             ).toFixed(2)
           : "0.00";
-
       setCompletionVsSchedule({
         total: totalScheduledSessions,
         completed: completedScheduledSessions,
@@ -128,12 +118,11 @@ function Insights() {
     }
 
     // Calculate Quiz Performance (Pass/Fail Ratio and basic trends)
-    const quizOutcomes = tasks.filter((task) => task.type === "quiz-outcome");
-    console.log("Insights - Quiz outcomes:", quizOutcomes);
-
+    const quizOutcomes = completedTasks.filter(
+      (task) => task.type === "quiz-outcome"
+    );
     let passedQuizzes = 0;
     let failedQuizzes = 0;
-
     quizOutcomes.forEach((quiz) => {
       if (quiz.status === "passed") {
         passedQuizzes++;
@@ -141,13 +130,11 @@ function Insights() {
         failedQuizzes++;
       }
     });
-
     const totalQuizzes = passedQuizzes + failedQuizzes;
     const passRate =
       totalQuizzes > 0
         ? ((passedQuizzes / totalQuizzes) * 100).toFixed(2)
         : "0.00";
-
     setQuizPerformance({
       total: totalQuizzes,
       passed: passedQuizzes,
@@ -155,36 +142,135 @@ function Insights() {
       passRate: passRate,
       recentOutcomes: quizOutcomes
         .sort((a, b) => b.timestamp - a.timestamp)
-        .slice(0, 5), // Get 5 most recent for basic trend
+        .slice(0, 5),
     });
 
     // Calculate Cumulative Sessions Completed
-    const completedSessions = tasks.filter(
+    const completedSessions = completedTasks.filter(
       (task) =>
         task.type === "lecture" ||
         task.type === "section" ||
         task.type === "study"
     );
-
     completedSessions.sort((a, b) => a.timestamp - b.timestamp);
-
     const dailyCounts = {};
     completedSessions.forEach((task) => {
-      const date = new Date(task.timestamp).toLocaleDateString(); // e.g., "6/16/2025"
+      const date = new Date(task.timestamp).toLocaleDateString();
       dailyCounts[date] = (dailyCounts[date] || 0) + 1;
     });
-
     let cumulativeCount = 0;
     const dataForChart = Object.keys(dailyCounts).map((date) => {
       cumulativeCount += dailyCounts[date];
       return { date, sessions: cumulativeCount };
     });
     setCumulativeSessionsData(dataForChart);
-  }, [tasks]); // Depend on 'tasks' to re-run when new tasks are added
+  }, [completedTasks, generatedTasks, missedTasks]);
+
+  // --- Missed Task Metrics ---
+  const missedCount = missedTasks.length;
+  const completedCount = completedTasks.filter(
+    (task) =>
+      task.type === "lecture" ||
+      task.type === "section" ||
+      task.type === "study"
+  ).length;
+  const totalTracked = missedCount + completedCount;
+  const missedRate =
+    totalTracked > 0 ? ((missedCount / totalTracked) * 100).toFixed(1) : 0;
+
+  // Pie chart data for missed vs completed
+  const missedVsCompletedData = [
+    { name: "Completed", value: completedCount },
+    { name: "Missed", value: missedCount },
+  ];
+  const pieColors = ["#34d399", "#f87171"];
+
+  // Missed tasks over time (by day)
+  const missedByDay = {};
+  missedTasks.forEach((task) => {
+    const date = task.day;
+    missedByDay[date] = (missedByDay[date] || 0) + 1;
+  });
+  const missedByDayData = Object.keys(missedByDay).map((date) => ({
+    date,
+    missed: missedByDay[date],
+  }));
 
   return (
     <section className="p-6">
       <h2 className="text-3xl font-bold mb-6">My Learning Insights</h2>
+      <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6 place-items-center text-center">
+        <div className="bg-white p-6 rounded-lg shadow flex flex-col items-center justify-center w-full ">
+          <span className="text-4xl font-bold text-rose-500">
+            {missedCount}
+          </span>
+          <span className="text-lg text-gray-700 mt-2">Missed Tasks</span>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow flex flex-col items-center justify-center w-full ">
+          <span className="text-4xl font-bold text-indigo-500">
+            {missedRate}%
+          </span>
+          <span className="text-lg text-gray-700 mt-2">
+            Percentage of All Sessions Missed
+          </span>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow flex flex-col items-center justify-center w-full ">
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={missedVsCompletedData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={70}
+                label
+              >
+                {missedVsCompletedData.map((entry, idx) => (
+                  <Cell key={`cell-${idx}`} fill={pieColors[idx]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+          <span className="text-lg text-gray-700 mt-2">
+            Missed vs Completed
+          </span>
+        </div>
+      </div>
+      {/* Missed Tasks Over Time */}
+      <div className="mb-8 bg-white p-6 rounded-lg shadow flex flex-col items-center">
+        <h3 className="text-xl font-semibold mb-4">Missed Tasks Over Time</h3>
+        {missedByDayData.length === 0 ? (
+          <p className="text-gray-600">No missed tasks recorded yet.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart
+              data={missedByDayData}
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="colorMissed" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f87171" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" />
+              <YAxis allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" />
+              <Tooltip />
+              <Area
+                type="monotone"
+                dataKey="missed"
+                stroke="#f87171"
+                fillOpacity={1}
+                fill="url(#colorMissed)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sessions Completed by Type (Bar Chart) */}

@@ -3,19 +3,24 @@ import axios from "axios";
 import LectureForm from "./LectureForm"; // Import LectureForm from its new file
 import React from "react";
 import { useTasks } from "../contexts/TasksContext"; // Import useTasks
+import { getWeekKey } from "../contexts/TasksContext";
 
 function StudyForm({
   eventType,
   subject,
   onCloseModal,
   modalQuizLectureNumber,
+  modalDay,
+  modalTime,
+  slotDate,
+  weekStart,
 }) {
-  const { setTasks } = useTasks(); // Use the hook here
+  const { setTasks, setCompletedTasks, setCompletedTasksForWeek } = useTasks(); // Use the hook here
   const [lectureCount, setLectureCount] = useState(1);
   const [lectureDetails, setLectureDetails] = useState(
     modalQuizLectureNumber
-      ? [{ number: modalQuizLectureNumber, status: "", file: null, quiz: null }]
-      : [{ number: 1, status: "", file: null, quiz: null }] // Initialize with one lecture by default
+      ? [{ number: modalQuizLectureNumber, file: null, quiz: null }]
+      : [{ number: 1, file: null, quiz: null }] // Initialize with one lecture by default
   );
   const [error, setError] = useState(null);
   const [currentSessionNumber, setCurrentSessionNumber] = useState(1);
@@ -92,12 +97,12 @@ function StudyForm({
 
   const handleQuizCompleted = useCallback(
     (passed, quizData, userAnswers, calculatedScore, lectureNumberForQuiz) => {
-      // Record the quiz outcome in tasks context
-      setTasks((prevTasks) => [
-        ...prevTasks,
+      // Record the quiz outcome in completedTasks context
+      setCompletedTasks((prev) => [
+        ...prev,
         {
           type: "quiz-outcome",
-          subject: subject.replace(/^Study:\s*/, "").trim(), // Extract subject from study session name
+          subject: subject.replace(/^Study:\s*/, "").trim(),
           lectureNumber: lectureNumberForQuiz,
           status: passed ? "passed" : "failed",
           score: calculatedScore,
@@ -116,7 +121,7 @@ function StudyForm({
         },
       ]);
     },
-    [setTasks, subject, setCompletedQuizzesResults]
+    [setCompletedTasks, subject, setCompletedQuizzesResults]
   );
 
   const handleFinalStudySessionSubmission = async () => {
@@ -129,6 +134,20 @@ function StudyForm({
       if (!courseId) {
         throw new Error("Course ID not found. Cannot submit study session.");
       }
+
+      // Record the study session completion in tasks context
+      const studyTask = {
+        type: "study",
+        subject: subject.replace(/^Study:\s*/, "").trim(),
+        day: slotDate,
+        time: modalTime,
+        timestamp: Date.now(),
+        completed: true,
+      };
+
+      // Use weekStart or slotDate to get the correct week key
+      const weekKey = getWeekKey(new Date(slotDate));
+      setCompletedTasksForWeek(weekKey, (prev) => [...prev, studyTask]);
 
       const learningObjectiveIds = [];
       const evaluationIds = [];
@@ -279,7 +298,7 @@ function StudyForm({
     setLectureCount((prev) => prev + 1);
     setLectureDetails((prevDetails) => [
       ...prevDetails,
-      { number: null, status: "", file: null, quiz: null },
+      { number: null, file: null, quiz: null },
     ]);
   };
 

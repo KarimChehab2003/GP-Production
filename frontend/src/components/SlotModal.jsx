@@ -3,6 +3,7 @@ import LectureSectionForm from "./LectureSectionForm";
 import StudyForm from "./StudyForm";
 import RetryQuizForm from "./RetryQuizForm";
 import { useTasks } from "../contexts/TasksContext";
+import { getWeekKey } from "../contexts/TasksContext";
 
 function SlotModal({
   onClose,
@@ -12,8 +13,11 @@ function SlotModal({
   modalDay,
   modalTime,
   onRemoveQuizSession,
+  slotDate,
+  weekStart,
 }) {
-  const { setTasks } = useTasks();
+  const { setCompletedTasks, setGeneratedTasks, setCompletedTasksForWeek } =
+    useTasks();
   const memoizedOnClose = useCallback(onClose, [onClose]);
   const eventType =
     type === "Lec"
@@ -28,48 +32,26 @@ function SlotModal({
   const [formDetails, setFormDetails] = useState({
     subject: subject,
     type: eventType,
-    day: modalDay,
+    day: slotDate,
     time: modalTime,
     timestamp: Date.now(),
+    number: null,
   });
 
   const handleClick = () => {
-    setTasks((prevTasks) => [...prevTasks, formDetails]);
-
+    const weekKey = getWeekKey(new Date(formDetails.day));
+    setCompletedTasksForWeek(weekKey, (prev) => [...prev, formDetails]);
     if (eventType === "lecture" || eventType === "section") {
-      const {
-        subject: completedSubject,
-        number: lectureNumber,
-        status,
-      } = formDetails;
-
-      let generatedTaskDescription = "";
-      if (status === "fully") {
-        const numOnly = lectureNumber
-          ? lectureNumber.replace(eventType + " ", "")
-          : "";
-        generatedTaskDescription = `Study ${eventType} ${numOnly} from ${completedSubject} in the next study session`;
-      } else if (status === "partially") {
-        const numOnly = lectureNumber
-          ? lectureNumber.replace(eventType + " ", "")
-          : "";
-        generatedTaskDescription = `Review ${eventType} ${numOnly} from ${completedSubject} in the next study session`;
-      }
-
-      if (generatedTaskDescription) {
-        setTasks((prevTasks) => [
-          ...prevTasks,
-          {
-            subject: generatedTaskDescription,
-            type: "generated",
-            originalEventType: eventType,
-            originalSubject: completedSubject,
-            originalLectureNumber: lectureNumber,
-            originalStatus: status,
-            timestamp: Date.now(),
-          },
-        ]);
-      }
+      const followUpTask = {
+        type: "generated",
+        subject: `Study ${formDetails.number || ""} in ${
+          formDetails.subject
+        } in your next study session`,
+        day: formDetails.day,
+        time: formDetails.time,
+        timestamp: Date.now(),
+      };
+      setGeneratedTasks((prev) => [...prev, followUpTask]);
     }
     onClose();
   };
@@ -92,6 +74,7 @@ function SlotModal({
             eventType={eventType}
             subject={subject}
             setFormDetails={setFormDetails}
+            weekStart={weekStart}
           />
         )}
         {eventType === "section" && (
@@ -99,6 +82,7 @@ function SlotModal({
             eventType={eventType}
             subject={subject}
             setFormDetails={setFormDetails}
+            weekStart={weekStart}
           />
         )}
         {eventType === "study" && (
@@ -107,6 +91,10 @@ function SlotModal({
             subject={subject}
             onCloseModal={memoizedOnClose}
             modalQuizLectureNumber={modalLectureNumber}
+            modalDay={modalDay}
+            modalTime={modalTime}
+            slotDate={slotDate}
+            weekStart={weekStart}
           />
         )}
         {eventType === "retryQuiz" && (

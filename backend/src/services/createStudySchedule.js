@@ -10,6 +10,7 @@ export const createStudySchedule = async (studentData) => {
 
     // Predict study hours
     const formattedFeatures = encodeStudentData(studentData);
+    console.log("//////////////////////// Formatted Data: " , formattedFeatures);
     const studyHoursPrediction = await predictStudyHours(formattedFeatures);
     console.log("//////////////////////// Predicted Study Hours: ", studyHoursPrediction);
 

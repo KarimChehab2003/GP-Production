@@ -11,7 +11,7 @@ function RetryQuizForm({
   modalTime,
   onRemoveQuizSession,
 }) {
-  const { setTasks } = useTasks();
+  const { setTasks, setCompletedTasks } = useTasks();
   const [file, setFile] = useState(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
@@ -63,9 +63,9 @@ function RetryQuizForm({
   ) => {
     console.log("Quiz completed. Passed:", passed, "Score:", calculatedScore);
 
-    // 1. Record the quiz outcome in tasks context
-    setTasks((prevTasks) => [
-      ...prevTasks,
+    // 1. Record the quiz outcome in completedTasks context
+    setCompletedTasks((prev) => [
+      ...prev,
       {
         type: "quiz-outcome",
         subject: subject,
