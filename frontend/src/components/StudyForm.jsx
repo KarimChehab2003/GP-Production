@@ -3,6 +3,7 @@ import axios from "axios";
 import LectureForm from "./LectureForm"; // Import LectureForm from its new file
 import React from "react";
 import { useTasks } from "../contexts/TasksContext"; // Import useTasks
+import { getWeekKey } from "../contexts/TasksContext";
 
 function StudyForm({
   eventType,
@@ -11,8 +12,10 @@ function StudyForm({
   modalQuizLectureNumber,
   modalDay,
   modalTime,
+  slotDate,
+  weekStart,
 }) {
-  const { setTasks, setCompletedTasks } = useTasks(); // Use the hook here
+  const { setTasks, setCompletedTasks, setCompletedTasksForWeek } = useTasks(); // Use the hook here
   const [lectureCount, setLectureCount] = useState(1);
   const [lectureDetails, setLectureDetails] = useState(
     modalQuizLectureNumber
@@ -94,12 +97,12 @@ function StudyForm({
 
   const handleQuizCompleted = useCallback(
     (passed, quizData, userAnswers, calculatedScore, lectureNumberForQuiz) => {
-      // Record the quiz outcome in tasks context
-      setTasks((prevTasks) => [
-        ...prevTasks,
+      // Record the quiz outcome in completedTasks context
+      setCompletedTasks((prev) => [
+        ...prev,
         {
           type: "quiz-outcome",
-          subject: subject.replace(/^Study:\s*/, "").trim(), // Extract subject from study session name
+          subject: subject.replace(/^Study:\s*/, "").trim(),
           lectureNumber: lectureNumberForQuiz,
           status: passed ? "passed" : "failed",
           score: calculatedScore,
@@ -118,7 +121,7 @@ function StudyForm({
         },
       ]);
     },
-    [setTasks, subject, setCompletedQuizzesResults]
+    [setCompletedTasks, subject, setCompletedQuizzesResults]
   );
 
   const handleFinalStudySessionSubmission = async () => {
@@ -136,16 +139,15 @@ function StudyForm({
       const studyTask = {
         type: "study",
         subject: subject.replace(/^Study:\s*/, "").trim(),
-        day: modalDay,
+        day: slotDate,
         time: modalTime,
         timestamp: Date.now(),
         completed: true,
       };
 
-      setCompletedTasks((prev) => {
-        const newTasks = [...prev, studyTask];
-        return newTasks;
-      });
+      // Use weekStart or slotDate to get the correct week key
+      const weekKey = getWeekKey(new Date(slotDate));
+      setCompletedTasksForWeek(weekKey, (prev) => [...prev, studyTask]);
 
       const learningObjectiveIds = [];
       const evaluationIds = [];
