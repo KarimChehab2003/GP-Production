@@ -136,5 +136,5 @@ courses.map((course) => {
 const studyPlan = await generateSchedule(collegeSchedule, activitiesSchedule, timeslotPrediction);
 
 
-return studyPlan; //to be persisted by other modules
+return studyPlan; //to be persisted by other modules   
 }
