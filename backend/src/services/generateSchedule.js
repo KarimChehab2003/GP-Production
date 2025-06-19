@@ -17,8 +17,8 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
             });
 
             // Get the absolute path to the Python script
-            const workspaceRoot = 'C:/Users/alyye/OneDrive/Desktop/gp/project/GP-Production';
-            const pythonScriptPath = path.join(workspaceRoot, 'backend', 'python-scripts', 'CP', 'CP.py');
+            const pythonScriptPath = path.join(__dirname, '..', '..', 'python-scripts', 'CP', 'CP.py');
+            console.log("Python script path:", pythonScriptPath);
 
             // Check if Python script exists
             if (!fs.existsSync(pythonScriptPath)) {
@@ -31,7 +31,7 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
             // Spawn Python process with full error handling
             const pythonProcess = spawn(pythonCommand, [pythonScriptPath], {
                 stdio: ['pipe', 'pipe', 'pipe'],
-                shell: true, // Use shell to ensure Python is found
+                // shell: true, // Use shell to ensure Python is found
                 cwd: path.dirname(pythonScriptPath) // Set working directory to script location
             });
 
@@ -61,13 +61,13 @@ export default function generateSchedule(collegeSchedule, externalActivities, co
                     if (!result) {
                         throw new Error('No output received from Python script');
                     }
-                    
+
                     // Extract the JSON part from the output
                     const jsonMatch = result.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
                         throw new Error('No JSON object found in Python output');
                     }
-                    
+
                     const scheduleData = JSON.parse(jsonMatch[0]);
                     resolve(scheduleData);
                 } catch (e) {

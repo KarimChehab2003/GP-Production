@@ -1,12 +1,13 @@
 import { doc, updateDoc, getDoc, addDoc, deleteDoc } from "firebase/firestore";
 import { studentsCollectionRef, coursesCollectionRef } from "../config/dbCollections.js";
 import { createStudySchedule } from "../services/createStudySchedule.js";
+import { adaptschedule } from "../services/adaptScheduleService.js";
 
 // Update Extracurricular Activities
 export const updateExtracurricular = async (req, res) => {
     try {
         const { userId, extracurricularActivities, takesCurricularActivities } = req.body;
-        
+
         if (!userId) {
             return res.status(400).json({ error: "User ID is required" });
         }
@@ -19,7 +20,7 @@ export const updateExtracurricular = async (req, res) => {
         }
 
         const userData = userDoc.data();
-        
+
         // Fetch course details for each course ID
         const courseDetails = [];
         if (userData.courses && userData.courses.length > 0) {
@@ -45,7 +46,7 @@ export const updateExtracurricular = async (req, res) => {
                 }
             }
         }
-        
+
         // Update the user's extracurricular activities
         const updatedData = {
             extracurricularActivities,
@@ -80,7 +81,7 @@ export const updateExtracurricular = async (req, res) => {
 export const updateCollegeSchedule = async (req, res) => {
     try {
         const { userId, courses } = req.body;
-        
+
         if (!userId) {
             return res.status(400).json({ error: "User ID is required" });
         }
@@ -157,5 +158,17 @@ export const updateCollegeSchedule = async (req, res) => {
     } catch (error) {
         console.error("Error updating college schedule:", error);
         res.status(500).json({ error: "Failed to update college schedule" });
+    }
+};
+
+// Expose adaptschedule for API
+export const adaptScheduleController = async (req, res) => {
+    try {
+        const student = req.body;
+        const result = await adaptschedule(student);
+        res.json({ studyPlan: result });
+    } catch (error) {
+        console.error("Error in adaptScheduleController:", error);
+        res.status(500).json({ error: error.message || "Failed to adapt schedule" });
     }
 };

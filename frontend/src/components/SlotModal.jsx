@@ -4,6 +4,7 @@ import StudyForm from "./StudyForm";
 import RetryQuizForm from "./RetryQuizForm";
 import { useTasks } from "../contexts/TasksContext";
 import { getWeekKey } from "../contexts/TasksContext";
+import axios from "axios";
 
 function SlotModal({
   onClose,
@@ -29,6 +30,23 @@ function SlotModal({
       : type === "retryQuiz"
       ? "retryQuiz"
       : "";
+
+  // Helper to fetch courseID for a subject
+  const fetchCourseIdForSubject = async (subject) => {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser || !currentUser.courses) return null;
+    try {
+      const response = await axios.get(
+        `http://localhost:5100/api/courses/filtered?name=${encodeURIComponent(
+          subject
+        )}&enrolledIds=${currentUser.courses.join(",")}`
+      );
+      return response.data.id;
+    } catch (err) {
+      return currentUser.courses[0] || null;
+    }
+  };
+
   const [formDetails, setFormDetails] = useState({
     subject: subject,
     type: eventType,
@@ -36,11 +54,15 @@ function SlotModal({
     time: modalTime,
     timestamp: Date.now(),
     number: null,
+    courseID: null,
   });
 
-  const handleClick = () => {
+  const handleClick = async () => {
+    // Fetch courseID for this subject
+    const courseID = await fetchCourseIdForSubject(subject);
     const weekKey = getWeekKey(new Date(formDetails.day));
-    setCompletedTasksForWeek(weekKey, (prev) => [...prev, formDetails]);
+    const detailsWithCourse = { ...formDetails, courseID };
+    setCompletedTasksForWeek(weekKey, (prev) => [...prev, detailsWithCourse]);
     if (eventType === "lecture" || eventType === "section") {
       const followUpTask = {
         type: "generated",
@@ -50,6 +72,7 @@ function SlotModal({
         day: formDetails.day,
         time: formDetails.time,
         timestamp: Date.now(),
+        courseID,
       };
       setGeneratedTasks((prev) => [...prev, followUpTask]);
     }

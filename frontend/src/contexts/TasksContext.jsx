@@ -160,7 +160,16 @@ export function TasksProvider({ children }) {
     // Add missed lectures/sections to missedTasks
     if (missedLectSec.length > 0) {
       setMissedTasks((prev) => {
-        const newMissed = [...prev, ...missedLectSec];
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        const newMissed = [
+          ...prev,
+          ...missedLectSec.map((task) => ({
+            ...task,
+            courseID:
+              task.courseID ||
+              (currentUser?.courses ? currentUser.courses[0] : null),
+          })),
+        ];
         // Remove duplicates
         return newMissed.filter(
           (task, idx, self) =>
@@ -178,9 +187,16 @@ export function TasksProvider({ children }) {
     // Add missed study tasks to missedTasks
     if (missedStudyTasks.length > 0) {
       setMissedTasks((prev) => {
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
         const newMissed = [
           ...prev,
-          ...missedStudyTasks.map((t) => ({ ...t, type: "study" })),
+          ...missedStudyTasks.map((t) => ({
+            ...t,
+            type: "study",
+            courseID:
+              t.courseID ||
+              (currentUser?.courses ? currentUser.courses[0] : null),
+          })),
         ];
         // Remove duplicates
         return newMissed.filter(

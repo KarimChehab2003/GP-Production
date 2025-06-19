@@ -124,6 +124,22 @@ function StudyForm({
     [setCompletedTasks, subject, setCompletedQuizzesResults]
   );
 
+  // Helper to fetch courseID for a subject
+  const fetchCourseIdForSubject = async (subject) => {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser || !currentUser.courses) return null;
+    try {
+      const response = await axios.get(
+        `http://localhost:5100/api/courses/filtered?name=${encodeURIComponent(
+          subject
+        )}&enrolledIds=${currentUser.courses.join(",")}`
+      );
+      return response.data.id;
+    } catch (err) {
+      return currentUser.courses[0] || null;
+    }
+  };
+
   const handleFinalStudySessionSubmission = async () => {
     setError(null);
     try {
@@ -131,6 +147,10 @@ function StudyForm({
       if (!currentUser) {
         throw new Error("No user data found");
       }
+      // Fetch courseID for this subject
+      const courseId = await fetchCourseIdForSubject(
+        subject.replace(/^Study:\s*/, "").trim()
+      );
       if (!courseId) {
         throw new Error("Course ID not found. Cannot submit study session.");
       }
@@ -143,6 +163,7 @@ function StudyForm({
         time: modalTime,
         timestamp: Date.now(),
         completed: true,
+        courseID: courseId,
       };
 
       // Use weekStart or slotDate to get the correct week key
