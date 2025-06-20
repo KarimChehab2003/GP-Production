@@ -70,6 +70,7 @@ function detectCRPattern(session_sequence) {
     for (const LO of session_sequence) {
         if (persisted_learning_objectives.some(check_LO =>
             check_LO.lecture_number == LO.lecture_number &&
+            check_LO.course == LO.course &&
             check_LO.created_at.toDate() < LO.created_at.toDate()
             // checking for the learning objective if it was persisted on an earlier date
         )) {
@@ -93,6 +94,7 @@ function detectSTPattern(session_sequence) {
     for (let lecture of lecturesInSession) {
         if (!persisted_learning_objectives.some(check_LO =>
             check_LO.lecture_number == lecture.lecture_number &&
+            check_LO.course == lecture.course &&
             check_LO.created_at.toDate() < lecture.created_at.toDate()
             // checking for the learning objective if it was persisted on an earlier date
         )) {
