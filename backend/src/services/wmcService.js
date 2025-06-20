@@ -40,6 +40,13 @@ function sortByDate(sequence) {
     });
 }
 
+// function to format date
+function formatDateDDMMYYYY(date) {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
 
 // Linear Navigation Pattern
 function detectLNPattern(session_sequence) {
@@ -162,7 +169,7 @@ export const calculateWMCinSession = (session_sequence) => {
 
 // calculate for subject 
 
-export const calculateWMCinSubject = async (subject_id, numberOfSessionsPerWeek) => {
+export const calculateWMCinSubject = async (studentID,subject_id, numberOfSessionsPerWeek) => {
     //getting learning sequence
     const learningsessionsDocs = await getDocs(studySessionsCollectionRef);
     const learning_sessions = learningsessionsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
@@ -171,44 +178,147 @@ export const calculateWMCinSubject = async (subject_id, numberOfSessionsPerWeek)
     const learningObjectivesDocs = await getDocs(learningObjectivesCollectionRef)
     persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
         .filter(LO => LO.course == subject_id);
-    for (let sessions of learning_sessions) {
-        if (sessions.session_sequence) {
-            learning_sequence.push(sessions.session_sequence);
+
+        // old way of getting the whole learning sequence
+    // for (let sessions of learning_sessions) {
+    //     if (sessions.session_sequence) {
+    //         learning_sequence.push(sessions.session_sequence);
+    //     }
+    // }
+
+    // retrieving completed sessions in the past two weeks
+    const weeklyreportsRef = db.collection('weekly report').doc(studentID);
+    const weeklySnap = await weeklyreportsRef.get();
+
+    const studentWeeklyReports = weeklySnap.data();
+
+    // assuring calculations start from Sunday 
+    const todays_Date = new Date();
+
+    const dayOfWeek = todays_Date.getDay();
+
+    const daysToAdd = (7-dayOfWeek)%7;
+
+    const nextSunday = todays_Date+daysToAdd;
+ 
+    let lastSunday = nextSunday-7
+
+    let earlierSunday = lastSunday-7
+
+    
+    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`].completedTasks
+    .filter(completedTask=> completedTask.courseID == subject_id);
+
+    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`].completedTasks
+    .filter(completedTask=> completedTask.courseID == subject_id);
+    
+    // loading the target session in the learning_sequence
+
+    for(let completedSession in week1tasks){
+
+     let result = learning_sessions.find(ls=> ls.created_at.toDate() === new Date(completedSession.day) )
+
+     if(result !== undefined){
+      learning_sequence.push(result.session_sequence)
+     }
+    }
+
+    for(let completedSession in week2tasks){
+        let result = learning_sessions.find(ls=> ls.created_at.toDate() === new Date(completedSession.day) )
+
+        if(result !== undefined){
+         learning_sequence.push(result.session_sequence)
         }
     }
-    const targetSessions = [] // selecting the sessions of the past 2 weeks
-    for (let i = 0; i < numberOfSessionsPerWeek * 2; i++) {
-        targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
-    }
+
+    //const targetSessions = [] // selecting the sessions of the past 2 weeks
+    // for (let i = 0; i < numberOfSessionsPerWeek * 2; i++) {
+    //     targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
+    // }
+
+    
+
+
     let wmc_in_subject = 0;
-    for (let session of targetSessions) {
+    for (let session of learning_sequence) {
         wmc_in_subject += calculateWMCinSession(session);
     }
-    wmc_in_subject = wmc_in_subject / targetSessions.length;
+    wmc_in_subject = wmc_in_subject / learning_sequence.length;
     return wmc_in_subject;
 }
 
 
 
 
-export const calculateStudentWMC = async (numberOfStudySessions) => {
+export const calculateStudentWMC = async (studentID,numberOfStudySessions) => {
     // getting the course specific LOs
     const learningObjectivesDocs = await getDocs(learningObjectivesCollectionRef)
     persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     //getting learning sequence
     const learningsessionsDocs = await getDocs(studySessionsCollectionRef);
     const learning_sessions = learningsessionsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
-    for (let session of learning_sessions) {
-        learning_sequence.push(session.session_sequence);
-    }
-    const targetSessions = [] // selecting the sessions of the past 2 weeks
-    for (let i = 0; i < numberOfStudySessions * 2; i++) {
-        targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
-    }
+    // for (let session of learning_sessions) {
+    //     learning_sequence.push(session.session_sequence);
+    // }
+
+
+    const weeklyreportsRef = db.collection('weekly report').doc(studentID);
+    const weeklySnap = await weeklyreportsRef.get();
+
+    const studentWeeklyReports = weeklySnap.data();
+
+    // assuring calculations start from Sunday 
+    const todays_Date = new Date();
+
+    const dayOfWeek = todays_Date.getDay();
+
+    const daysToAdd = (7-dayOfWeek)%7;
+
+    const nextSunday = todays_Date+daysToAdd;
+ 
+    let lastSunday = nextSunday-7
+
+    let earlierSunday = lastSunday-7
+
+
+    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`].completedTasks
+    
+
+    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`].completedTasks
+    
+    // loading the target session in the learning_sequence
+
+    for(let completedSession in week1tasks){
+
+        let result = learning_sessions.some(ls=> 
+            ls.created_at.toDate() === new Date(completedSession.day)
+        && ls.course == completedSession.courseID
+        )
+   
+        if(result !== undefined){
+         learning_sequence.push(result.session_sequence)
+        }
+       }
+   
+       for(let completedSession in week2tasks){
+
+        let result = learning_sessions.some(ls=> 
+            ls.created_at.toDate() === new Date(completedSession.day)
+        && ls.course == completedSession.courseID
+        )
+           if(result !== undefined){
+            learning_sequence.push(result.session_sequence)
+           }
+       }
+
+    // const targetSessions = [] // selecting the sessions of the past 2 weeks
+    // for (let i = 0; i < numberOfStudySessions * 2; i++) {
+    //     targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
+    // }
     let wmc_student = 0;
-    for (let session of targetSessions) {
+    for (let session of learning_sequence) {
         wmc_student += calculateWMCinSession(session);
     }
-    wmc_student = wmc_student / targetSessions.length;
+    wmc_student = wmc_student /learning_sequence.length;
     return wmc_student;
 }

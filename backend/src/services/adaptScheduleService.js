@@ -7,13 +7,13 @@ import { predictCMCA } from "./cmcaService.js";
 import formatCurricularData from "./helperFunctions/formatCurricularData.js";
 import generateSchedule from "./generateSchedule.js";
 
-async function compareWMC(subject_id, numberOfSessionsPerWeek, numberofSessionsForSubject) {
+async function compareWMC(studentID,subject_id, numberOfSessionsPerWeek, numberofSessionsForSubject) {
     // verdict will be one of three values 
     // 1-"decrease" 2- "increase" 3-"same"
     let verdict = ""
 
-    const wmc_subject = await calculateWMCinSubject(subject_id, numberofSessionsForSubject);
-    const wmc_student = await calculateStudentWMC(numberOfSessionsPerWeek);
+    const wmc_subject = await calculateWMCinSubject(studentID,subject_id, numberofSessionsForSubject);
+    const wmc_student = await calculateStudentWMC(studentID,numberOfSessionsPerWeek);
 
     if (wmc_student < wmc_subject) {
         //easy subject needs sessions decrease
@@ -37,7 +37,7 @@ export const adaptschedule = async (student) => {
     // checking the difference of wmc for each subject
     const studentCourses = student.courses;
     for (const courseId of studentCourses) {
-        const verdict = await compareWMC(courseId, totalSessions, student["courses-sessions-mapping"][courseId]);
+        const verdict = await compareWMC(student.id,courseId, totalSessions, student["courses-sessions-mapping"][courseId]);
         if (verdict === "decrease") {
             student["courses-sessions-mapping"][courseId] -= 1;
         } else if (verdict === "increase") {
