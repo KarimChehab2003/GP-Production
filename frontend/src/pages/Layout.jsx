@@ -119,7 +119,7 @@ function Layout() {
             onClick={() => setIgnoreSlotRestrictions((prev) => !prev)}
             className="mb-2 px-4 py-2 bg-yellow-400 rounded cursor-pointer mx-2"
           >
-            {ignoreSlotRestrictions ? "Disable" : "Enable"} Slot Click
+            {ignoreSlotRestrictions ? "Enable" : "Disable"} Slot Click
             Restrictions (added this button for testing purposes)
           </button>
           <Routes>

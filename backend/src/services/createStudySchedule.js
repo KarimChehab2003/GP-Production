@@ -10,7 +10,7 @@ export const createStudySchedule = async (studentData) => {
 
     // Predict study hours
     const formattedFeatures = encodeStudentData(studentData);
-    console.log("//////////////////////// Formatted Data: " , formattedFeatures);
+    console.log("//////////////////////// Formatted Data: ", formattedFeatures);
     const studyHoursPrediction = await predictStudyHours(formattedFeatures);
     console.log("//////////////////////// Predicted Study Hours: ", studyHoursPrediction);
 
@@ -27,7 +27,21 @@ export const createStudySchedule = async (studentData) => {
     console.log("Activities schedule: ", activitiesSchedule);
     // Generate schedule
     const studyPlan = await generateSchedule(collegeSchedule, activitiesSchedule, timeslotPrediction);
-    return { studyPlan, studyHours: studyHoursPrediction }
+
+    // Create course-sessions mapping
+    const courseSessionsMapping = {};
+    if (studentData.courses && Array.isArray(studentData.courses)) {
+        timeslotPrediction.forEach(prediction => {
+            const course = studentData.courses.find(c => c.courseName === prediction.course);
+            if (course && course.id) {
+                courseSessionsMapping[course.id] = prediction.sessions;
+            }
+        });
+    }
+
+    console.log("THIS IS Course Sessions MappingGGGGGGGGGGGGGGGGGGGGGGGGG:", courseSessionsMapping);
+
+    return { studyPlan, studyHours: studyHoursPrediction, courseSessionsMapping };
 };
 
 

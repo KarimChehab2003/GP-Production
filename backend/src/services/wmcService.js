@@ -1,5 +1,7 @@
-import { getDocs, Timestamp } from 'firebase/firestore';
+import { getDocs, Timestamp, collection, doc, getDoc } from 'firebase/firestore';
 import { learningObjectivesCollectionRef, studySessionsCollectionRef } from '../config/dbCollections.js';
+import { db } from "../config/adminFirebase.js";
+
 class Learning_Objective {
     constructor(course, lecture_number, sessionNumber, created_at) {
         this.course = course;
@@ -40,6 +42,13 @@ function sortByDate(sequence) {
     });
 }
 
+// function to format date
+function formatDateDDMMYYYY(date) {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+}
 
 // Linear Navigation Pattern
 function detectLNPattern(session_sequence) {
@@ -162,53 +171,163 @@ export const calculateWMCinSession = (session_sequence) => {
 
 // calculate for subject 
 
-export const calculateWMCinSubject = async (subject_id, numberOfSessionsPerWeek) => {
+export const calculateWMCinSubject = async (studentID, subject_id, numberOfSessionsPerWeek) => {
     //getting learning sequence
     const learningsessionsDocs = await getDocs(studySessionsCollectionRef);
     const learning_sessions = learningsessionsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
         .filter(session => session.course == subject_id);
     // getting the course specific LOs
     const learningObjectivesDocs = await getDocs(learningObjectivesCollectionRef)
-    persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
+    let persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
         .filter(LO => LO.course == subject_id);
-    for (let sessions of learning_sessions) {
-        if (sessions.session_sequence) {
-            learning_sequence.push(sessions.session_sequence);
+
+    // old way of getting the whole learning sequence
+    // for (let sessions of learning_sessions) {
+    //     if (sessions.session_sequence) {
+    //         learning_sequence.push(sessions.session_sequence);
+    //     }
+    // }
+
+    // retrieving completed sessions in the past two weeks
+    const weeklyreportsRef = doc(collection(db, 'weekly report'), studentID);
+    const weeklySnap = await getDoc(weeklyreportsRef);
+
+    if (!weeklySnap.exists()) {
+        console.error("Weekly report document not found for student:", studentID);
+        return 0;
+    }
+
+    const studentWeeklyReports = weeklySnap.data();
+
+    // assuring calculations start from Sunday 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0 = Sunday
+
+    const lastSunday = new Date(today);
+    lastSunday.setDate(today.getDate() - dayOfWeek);
+
+    const earlierSunday = new Date(lastSunday);
+    earlierSunday.setDate(lastSunday.getDate() - 7);
+
+
+    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`]?.completedTasks
+        ?.filter(completedTask => completedTask.courseID == subject_id) || [];
+
+    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`]?.completedTasks
+        ?.filter(completedTask => completedTask.courseID == subject_id) || [];
+
+    // loading the target session in the learning_sequence
+    const allTasks = [...week1tasks, ...week2tasks];
+    const learning_sequence = [];
+
+    for (const completedSession of allTasks) {
+        const sessionDate = new Date(completedSession.day);
+        let result = learning_sessions.find(ls => {
+            if (!ls.created_at) return false;
+            const lsDate = ls.created_at.toDate();
+            // Compare date part only, ignoring time
+            return lsDate.getFullYear() === sessionDate.getFullYear() &&
+                lsDate.getMonth() === sessionDate.getMonth() &&
+                lsDate.getDate() === sessionDate.getDate() &&
+                ls.course === completedSession.courseID;
+        });
+
+        if (result) {
+            learning_sequence.push(result.session_sequence);
         }
     }
-    const targetSessions = [] // selecting the sessions of the past 2 weeks
-    for (let i = 0; i < numberOfSessionsPerWeek * 2; i++) {
-        targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
-    }
+
+    //const targetSessions = [] // selecting the sessions of the past 2 weeks
+    // for (let i = 0; i < numberOfSessionsPerWeek * 2; i++) {
+    //     targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
+    // }
+
+
+
+
     let wmc_in_subject = 0;
-    for (let session of targetSessions) {
+    for (let session of learning_sequence) {
         wmc_in_subject += calculateWMCinSession(session);
     }
-    wmc_in_subject = wmc_in_subject / targetSessions.length;
+    wmc_in_subject = wmc_in_subject / learning_sequence.length;
     return wmc_in_subject;
 }
 
 
 
 
-export const calculateStudentWMC = async (numberOfStudySessions) => {
+export const calculateStudentWMC = async (studentID, numberOfStudySessions) => {
     // getting the course specific LOs
     const learningObjectivesDocs = await getDocs(learningObjectivesCollectionRef)
-    persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+    let persisted_learning_objectives = learningObjectivesDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     //getting learning sequence
     const learningsessionsDocs = await getDocs(studySessionsCollectionRef);
     const learning_sessions = learningsessionsDocs.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
-    for (let session of learning_sessions) {
-        learning_sequence.push(session.session_sequence);
+    // for (let session of learning_sessions) {
+    //     learning_sequence.push(session.session_sequence);
+    // }
+
+
+    const weeklyreportsRef = doc(collection(db, 'weekly report'), studentID);
+    const weeklySnap = await getDoc(weeklyreportsRef);
+
+    if (!weeklySnap.exists()) {
+        console.error("Weekly report document not found for student:", studentID);
+        return 0;
     }
-    const targetSessions = [] // selecting the sessions of the past 2 weeks
-    for (let i = 0; i < numberOfStudySessions * 2; i++) {
-        targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
+
+    const studentWeeklyReports = weeklySnap.data();
+
+
+
+
+
+    // assuring calculations start from Sunday 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0 = Sunday
+
+    const lastSunday = new Date(today);
+    lastSunday.setDate(today.getDate() - dayOfWeek);
+
+    const earlierSunday = new Date(lastSunday);
+    earlierSunday.setDate(lastSunday.getDate() - 7);
+
+    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`]?.completedTasks || [];
+
+    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`]?.completedTasks || [];
+
+    // loading the target session in the learning_sequence
+    const allTasks = [...week1tasks, ...week2tasks];
+    const learning_sequence = [];
+
+
+    for (const completedSession of allTasks) {
+        const sessionDate = new Date(completedSession.day);
+        let result = learning_sessions.find(ls => {
+            if (!ls.created_at) return false;
+            const lsDate = ls.created_at.toDate();
+            // Compare date part only, ignoring time
+            return lsDate.getFullYear() === sessionDate.getFullYear() &&
+                lsDate.getMonth() === sessionDate.getMonth() &&
+                lsDate.getDate() === sessionDate.getDate() &&
+                ls.course === completedSession.courseID;
+        });
+
+        if (result) {
+            learning_sequence.push(result.session_sequence);
+        }
     }
+
+    // const targetSessions = [] // selecting the sessions of the past 2 weeks
+    // for (let i = 0; i < numberOfStudySessions * 2; i++) {
+    //     targetSessions.push(learning_sequence[learning_sequence.length - 1 - i]);
+    // }
     let wmc_student = 0;
-    for (let session of targetSessions) {
+    for (let session of learning_sequence) {
         wmc_student += calculateWMCinSession(session);
     }
-    wmc_student = wmc_student / targetSessions.length;
+    wmc_student = wmc_student / learning_sequence.length;
     return wmc_student;
 }
