@@ -190,45 +190,48 @@ export const calculateWMCinSubject = async (studentID,subject_id, numberOfSessio
     const weeklyreportsRef = db.collection('weekly report').doc(studentID);
     const weeklySnap = await weeklyreportsRef.get();
 
+    if (!weeklySnap.exists) {
+        console.error("Weekly report document not found for student:", studentID);
+        return 0;
+    }
+
     const studentWeeklyReports = weeklySnap.data();
 
     // assuring calculations start from Sunday 
-    const todays_Date = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0 = Sunday
 
-    const dayOfWeek = todays_Date.getDay();
+    const lastSunday = new Date(today);
+    lastSunday.setDate(today.getDate() - dayOfWeek);
 
-    const daysToAdd = (7-dayOfWeek)%7;
-
-    const nextSunday = todays_Date+daysToAdd;
- 
-    let lastSunday = nextSunday-7
-
-    let earlierSunday = lastSunday-7
+    const earlierSunday = new Date(lastSunday);
+    earlierSunday.setDate(lastSunday.getDate() - 7);
 
     
-    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`].completedTasks
-    .filter(completedTask=> completedTask.courseID == subject_id);
+    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`]?.completedTasks
+    ?.filter(completedTask=> completedTask.courseID == subject_id) || [];
 
-    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`].completedTasks
-    .filter(completedTask=> completedTask.courseID == subject_id);
+    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`]?.completedTasks
+    ?.filter(completedTask=> completedTask.courseID == subject_id) || [];
     
     // loading the target session in the learning_sequence
+    const allTasks = [...week1tasks, ...week2tasks];
 
-    for(let completedSession in week1tasks){
+    for(const completedSession of allTasks){
+     const sessionDate = new Date(completedSession.day);
+     let result = learning_sessions.find(ls => {
+        const lsDate = ls.created_at.toDate();
+        // Compare date part only, ignoring time
+        return lsDate.getFullYear() === sessionDate.getFullYear() &&
+               lsDate.getMonth() === sessionDate.getMonth() &&
+               lsDate.getDate() === sessionDate.getDate() &&
+               ls.course === completedSession.courseID;
+     });
 
-     let result = learning_sessions.find(ls=> ls.created_at.toDate() === new Date(completedSession.day) )
-
-     if(result !== undefined){
-      learning_sequence.push(result.session_sequence)
+     if(result){
+      learning_sequence.push(result.session_sequence);
      }
-    }
-
-    for(let completedSession in week2tasks){
-        let result = learning_sessions.find(ls=> ls.created_at.toDate() === new Date(completedSession.day) )
-
-        if(result !== undefined){
-         learning_sequence.push(result.session_sequence)
-        }
     }
 
     //const targetSessions = [] // selecting the sessions of the past 2 weeks
@@ -265,51 +268,51 @@ export const calculateStudentWMC = async (studentID,numberOfStudySessions) => {
     const weeklyreportsRef = db.collection('weekly report').doc(studentID);
     const weeklySnap = await weeklyreportsRef.get();
 
+     if (!weeklySnap.exists) {
+        console.error("Weekly report document not found for student:", studentID);
+        return 0;
+    }
+
     const studentWeeklyReports = weeklySnap.data();
 
+  
+
+   
+
     // assuring calculations start from Sunday 
-    const todays_Date = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0 = Sunday
 
-    const dayOfWeek = todays_Date.getDay();
+    const lastSunday = new Date(today);
+    lastSunday.setDate(today.getDate() - dayOfWeek);
 
-    const daysToAdd = (7-dayOfWeek)%7;
+    const earlierSunday = new Date(lastSunday);
+    earlierSunday.setDate(lastSunday.getDate() - 7);
 
-    const nextSunday = todays_Date+daysToAdd;
- 
-    let lastSunday = nextSunday-7
+    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`]?.completedTasks || [];
 
-    let earlierSunday = lastSunday-7
-
-
-    const week1tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(earlierSunday)}`].completedTasks
-    
-
-    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`].completedTasks
+    const week2tasks = studentWeeklyReports[`week of ${formatDateDDMMYYYY(lastSunday)}`]?.completedTasks || [];
     
     // loading the target session in the learning_sequence
+    const allTasks = [...week1tasks, ...week2tasks];
 
-    for(let completedSession in week1tasks){
 
-        let result = learning_sessions.some(ls=> 
-            ls.created_at.toDate() === new Date(completedSession.day)
-        && ls.course == completedSession.courseID
-        )
-   
-        if(result !== undefined){
-         learning_sequence.push(result.session_sequence)
-        }
-       }
-   
-       for(let completedSession in week2tasks){
+     for(const completedSession of allTasks){
+     const sessionDate = new Date(completedSession.day);
+     let result = learning_sessions.find(ls => {
+        const lsDate = ls.created_at.toDate();
+        // Compare date part only, ignoring time
+        return lsDate.getFullYear() === sessionDate.getFullYear() &&
+               lsDate.getMonth() === sessionDate.getMonth() &&
+               lsDate.getDate() === sessionDate.getDate() &&
+               ls.course === completedSession.courseID;
+     });
 
-        let result = learning_sessions.some(ls=> 
-            ls.created_at.toDate() === new Date(completedSession.day)
-        && ls.course == completedSession.courseID
-        )
-           if(result !== undefined){
-            learning_sequence.push(result.session_sequence)
-           }
-       }
+     if(result){
+      learning_sequence.push(result.session_sequence);
+     }
+    }
 
     // const targetSessions = [] // selecting the sessions of the past 2 weeks
     // for (let i = 0; i < numberOfStudySessions * 2; i++) {
