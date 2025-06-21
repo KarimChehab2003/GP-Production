@@ -54,7 +54,7 @@ export const updateExtracurricular = async (req, res) => {
         };
 
         // Generate new schedule with updated activities
-        const { studyPlan } = await createStudySchedule({
+        const { studyPlan, courseSessionsMapping } = await createStudySchedule({
             ...userData,
             courses: courseDetails,
             extracurricularActivities,
@@ -64,7 +64,8 @@ export const updateExtracurricular = async (req, res) => {
         // Update user document with new schedule and activities
         await updateDoc(userRef, {
             ...updatedData,
-            timetable: studyPlan
+            timetable: studyPlan,
+            "courses-sessions-mapping": courseSessionsMapping
         });
 
         res.json({
@@ -136,7 +137,7 @@ export const updateCollegeSchedule = async (req, res) => {
         await Promise.all(deletePromises);
 
         // Generate new schedule with updated courses
-        const { studyPlan } = await createStudySchedule({
+        const { studyPlan, courseSessionsMapping } = await createStudySchedule({
             ...userData,
             courses: courses.map((course, index) => ({
                 ...course,
@@ -147,13 +148,15 @@ export const updateCollegeSchedule = async (req, res) => {
         // Update user document with new schedule and course IDs
         await updateDoc(userRef, {
             courses: updatedCourseIds,
-            timetable: studyPlan
+            timetable: studyPlan,
+            "courses-sessions-mapping": courseSessionsMapping
         });
 
         res.json({
             message: "College schedule updated successfully",
             timetable: studyPlan,
-            courseIds: updatedCourseIds
+            courseIds: updatedCourseIds,
+            courseSessionsMapping
         });
     } catch (error) {
         console.error("Error updating college schedule:", error);

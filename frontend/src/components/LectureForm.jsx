@@ -56,6 +56,9 @@ const LectureForm = React.memo(function LectureForm({
   return (
     <div className="border p-4 mb-4 rounded-md shadow-sm">
       <h4 className="text-lg font-semibold mb-3">Lecture {index + 1}</h4>
+      <p className="text-gray-500">
+        If you revised a past lecture, please upload it as well
+      </p>
 
       <div className="mb-4">
         <label
