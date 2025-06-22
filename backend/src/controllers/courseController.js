@@ -1,5 +1,5 @@
 import { db } from "../config/adminFirebase.js";
-import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
+import { collection, getDocs, query, where, getDoc, doc, documentId } from "firebase/firestore";
 
 // Get all courses
 export const getAllCourses = async (req, res) => {

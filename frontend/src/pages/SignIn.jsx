@@ -109,7 +109,7 @@ function SignIn() {
           </button>
           <p className="new-to-aspg">
             New to ASPG?{" "}
-            <a href="#" className="go-to-reg" onClick={() => navigate("/")}>
+            <a href="#" className="go-to-reg" onClick={() => navigate("/signup")}>
               Create account
             </a>
           </p>

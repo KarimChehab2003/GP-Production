@@ -56,8 +56,15 @@ function SlotModal({
     number: null,
     courseID: null,
   });
+  const [error, setError] = useState("");
 
   const handleClick = async () => {
+    // Validation: require number for lecture/section
+    if ((eventType === "lecture" || eventType === "section") && (!formDetails.number || formDetails.number.trim() === "")) {
+      setError(`Please enter the ${eventType} number before marking as done.`);
+      return;
+    }
+    setError("");
     // Fetch courseID for this subject
     const courseID = await fetchCourseIdForSubject(subject);
     const weekKey = getWeekKey(new Date(formDetails.day));
@@ -135,12 +142,17 @@ function SlotModal({
         )}
 
         {(eventType === "lecture" || eventType === "section") && (
-          <button
-            className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:-translate-y-1 transition duration-300 hover:cursor-pointer"
-            onClick={handleClick}
-          >
-            Mark as done
-          </button>
+          <>
+            {error && (
+              <div className="text-red-600 mb-2 text-sm font-medium">{error}</div>
+            )}
+            <button
+              className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:-translate-y-1 transition duration-300 hover:cursor-pointer"
+              onClick={handleClick}
+            >
+              Mark as done
+            </button>
+          </>
         )}
       </div>
     </section>

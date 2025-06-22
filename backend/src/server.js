@@ -5,6 +5,7 @@ import quizRoutes from "./routes/quizRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import insightsRoutes from "./routes/insightsRoutes.js";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
+import studentRoutes from "./routes/studentRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -15,6 +16,7 @@ app.use("/auth", authRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/user", insightsRoutes);
+app.use("/student", studentRoutes);
 app.use("/schedule", scheduleRoutes);
 
 const port = 5100;

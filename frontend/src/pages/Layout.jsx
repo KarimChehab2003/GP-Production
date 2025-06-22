@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { FaBell } from "react-icons/fa";
-import { Outlet, Routes, Route, Navigate } from "react-router-dom";
+import { FaBell, FaTrash } from "react-icons/fa";
+import { Routes, Route, Navigate } from "react-router-dom";
 import SideNav from "./SideNav";
 import Calendar from "../components/Calendar";
 import Tasks from "./Tasks";
@@ -13,12 +13,45 @@ function Layout() {
   const [currentUser, setCurrentUser] = useState({});
   const [ignoreSlotRestrictions, setIgnoreSlotRestrictions] = useState(false);
 
+  const [notifications, setNotifications] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsModalType, setSettingsModalType] = useState("");
 
   useEffect(() => {
     setCurrentUser(JSON.parse(localStorage.getItem("currentUser")) || {});
   }, []);
+
+  useEffect(() => {
+    // Notification logic
+    if (currentUser && currentUser.timetable && currentUser.timetable.schedule) {
+      const schedule = currentUser.timetable.schedule;
+      const { currentDay, currentSlot, currentSlotStart } = getCurrentDayAndSlot();
+      if (currentDay && currentSlot && schedule[currentDay] && currentSlot in schedule[currentDay]) {
+        const activity = schedule[currentDay][currentSlot];
+        if (!activity || activity === "") {
+          setNotifications([
+            { id: Date.now() + 1, message: "You have a free time slot now" },
+          ]);
+          const { nextActivity, nextActivityTime } = getNextActivity(schedule, currentDay, currentSlot, currentSlotStart);
+          if (nextActivity) {
+            setNotifications(prev => [
+              ...prev,
+              {
+                id: Date.now() + 2,
+                message: `Your next activity is "${nextActivity}" and is after ${nextActivityTime} hours`,
+              },
+            ]);
+          }
+        } else {
+          setNotifications([
+            { id: Date.now() + 3, message: `You have a "${activity}" now` },
+          ]);
+        }
+      }
+    }
+  }, [currentUser]);
 
   const handleCloseSettingsModal = () => {
     setIsSettingsModalOpen(false);
@@ -94,14 +127,111 @@ function Layout() {
     }
   };
 
+  function getCurrentDayAndSlot() {
+    const now = new Date();
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const currentDay = days[now.getDay()];
+    const currentHour = now.getHours();
+    
+    const slots = [
+      { label: "8AM-10AM", start: 8, end: 10 },
+      { label: "10AM-12PM", start: 10, end: 12 },
+      { label: "12PM-2PM", start: 12, end: 14 },
+      { label: "2PM-4PM", start: 14, end: 16 },
+      { label: "4PM-6PM", start: 16, end: 18 },
+      { label: "6PM-8PM", start: 18, end: 20 },
+      { label: "8PM-10PM", start: 20, end: 22 },
+    ];
+    const currentSlot = slots.find(s => currentHour >= s.start && currentHour < s.end);
+    return { currentDay, currentSlot: currentSlot ? currentSlot.label : null, currentSlotStart: currentSlot ? currentSlot.start : null };
+  }
+
+  function getNextActivity(schedule, day, slotLabel, slotStart) {
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    let foundCurrent = false;
+    let minDiff = Infinity;
+    let nextActivity = null;
+    let nextActivityTime = null;
+    for (let i = 0; i < daysOfWeek.length; i++) {
+      const d = daysOfWeek[(daysOfWeek.indexOf(day) + i) % 7];
+      const slots = schedule[d] || {};
+      for (const slot of [
+        "8AM-10AM", "10AM-12PM", "12PM-2PM", "2PM-4PM", "4PM-6PM", "6PM-8PM", "8PM-10PM"
+      ]) {
+        if (d === day && slotLabel) {
+          // Only start looking after the current slot
+          if (!foundCurrent && slot === slotLabel) {
+            foundCurrent = true;
+            continue;
+          }
+          if (!foundCurrent) continue;
+        }
+        const activity = slots[slot];
+        if (activity && activity !== "") {
+          // Calculate hours until this slot
+          let slotHour = parseInt(slot.split("-")[0]);
+          if (slot.includes("PM") && slotHour !== 12) slotHour += 12;
+          if (slot.includes("AM") && slotHour === 12) slotHour = 0;
+          let dayDiff = (daysOfWeek.indexOf(d) - daysOfWeek.indexOf(day) + 7) % 7;
+          let hourDiff = (dayDiff * 24 + slotHour - slotStart);
+          if (hourDiff <= 0) hourDiff += 24 * 7; // wrap around week
+          if (hourDiff < minDiff) {
+            minDiff = hourDiff;
+            nextActivity = activity;
+            nextActivityTime = hourDiff;
+          }
+        }
+      }
+    }
+    return { nextActivity, nextActivityTime: minDiff !== Infinity ? minDiff : null };
+  }
+
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-indigo-500 flex justify-between items-center text-white py-4 px-8 flex-shrink-0">
+      <header className="bg-indigo-500 flex justify-between items-center text-white py-4 px-8 flex-shrink-0 relative">
         <p className="text-2xl font-semibold">ASPG</p>
-        <div className="flex justify-center items-center space-x-4">
+        <div className="flex justify-center items-center space-x-4 relative">
           <p>Welcome, {currentUser.fname + " " + currentUser.lname}</p>
-          <FaBell className="text-xl cursor-pointer hover:text-indigo-200 transition-colors" />
+          <div className="relative">
+            <FaBell
+              className="text-xl cursor-pointer hover:text-indigo-200 transition-colors"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+            />
+            {notifications.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5 flex items-center justify-center min-w-[20px] min-h-[20px]">
+                {notifications.length}
+              </span>
+            )}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-96 bg-white text-black rounded shadow-lg z-50">
+                <div className="p-3 font-semibold border-b text-center">My Notifications</div>
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">No notifications</div>
+                ) : (
+                  notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="flex items-center justify-between px-4 py-2 border-b last:border-b-0 hover:bg-gray-100"
+                    >
+                      <span>{notification.message}</span>
+                      <button
+                        className="ml-2 text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded"
+                        onClick={() =>
+                          setNotifications((prev) =>
+                            prev.filter((n) => n.id !== notification.id)
+                          )
+                        }
+                        aria-label="Delete notification"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
