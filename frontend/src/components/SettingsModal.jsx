@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import Conflicts from "./Conflicts";
 import ExternalActivities from "./ExternalActivities";
 import CollegeSchedule from "./CollegeSchedule";
+import Profile from "./Profile";
 
 function SettingsModal({
   onClose,
@@ -27,6 +28,9 @@ function SettingsModal({
         </button>
 
         <div className="max-h-[calc(100vh-4rem)] overflow-y-auto">
+          {type === "profile" && (
+            <Profile/>
+          )}
           {type === "conflicts" && (
             <Conflicts conflicts={conflicts} />
           )}

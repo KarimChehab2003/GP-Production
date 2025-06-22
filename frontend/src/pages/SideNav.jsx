@@ -84,8 +84,15 @@ function SideNav({ setIsSettingsModalOpen, setSettingsModalType }) {
             
             {showSettingsDropdown && (
               <div className="absolute left-30 bottom-0 mt-2 w-60 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                  My Profile
+                <button 
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setIsSettingsModalOpen(true);
+                    setShowSettingsDropdown(false);
+                    setSettingsModalType("profile");
+                  }}
+                >
+                  Update My Profile
                 </button>
                 <button 
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
