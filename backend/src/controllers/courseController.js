@@ -93,7 +93,7 @@ export const getFilteredCourse = async (req, res) => {
         const q = query(
             coursesCollectionRef,
             where("courseName", "==", name),
-            where(db.app.firestore.FieldPath.documentId(), "in", enrolledIdsArray)
+            where("__name__", "in", enrolledIdsArray)
         );
         const querySnapshot = await getDocs(q);
 

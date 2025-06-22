@@ -40,6 +40,7 @@ export const updateInsights = async (req, res) => {
         const { userId } = req.params;
         // The body should be the week object directly (e.g., { 'week of 15/06/2025': {...} })
         const weekObject = req.body;
+        console.log("Backend received weekly tasks to update:", JSON.stringify(weekObject, null, 2));
         if (!userId || typeof weekObject !== "object" || Array.isArray(weekObject)) {
             return res.status(400).json({ error: "User ID and week object are required." });
         }

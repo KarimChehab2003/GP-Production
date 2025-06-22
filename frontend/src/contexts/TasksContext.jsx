@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 const TasksContext = createContext();
@@ -7,7 +7,7 @@ export function TasksProvider({ children }) {
   // Store all weeks' data in an object
   const [weeklyTasks, setWeeklyTasks] = useState({});
   const [isTasksLoaded, setIsTasksLoaded] = useState(false);
-  const [lastCheckedDate, setLastCheckedDate] = useState(null);
+  const isInitialMount = useRef(true);
 
   // Get userId from localStorage
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -66,8 +66,8 @@ export function TasksProvider({ children }) {
     return endDate;
   };
 
-  // Helper to get today's scheduled lectures/sections from timetable
-  const getTodaysScheduledLecturesSections = () => {
+  // Helper to get scheduled tasks for a specific date from timetable
+  const getScheduledTasksForDate = (dateString) => {
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     const schedule = currentUser?.timetable?.schedule;
     if (!schedule) return [];
@@ -80,23 +80,32 @@ export function TasksProvider({ children }) {
       "Friday",
       "Saturday",
     ];
-    const todayName = daysOfWeek[new Date().getDay()];
-    const todaySchedule = schedule[todayName] || {};
+    // Use the provided date string to determine the day of the week, adding T12:00:00 to avoid timezone issues
+    const checkDate = new Date(`${dateString}T12:00:00`);
+    const dayName = daysOfWeek[checkDate.getDay()];
+    const daySchedule = schedule[dayName] || {};
     const result = [];
-    for (const time in todaySchedule) {
-      const content = todaySchedule[time];
+    for (const time in daySchedule) {
+      const content = daySchedule[time];
       if (content.startsWith("Lec:")) {
         result.push({
           type: "lecture",
           subject: content.replace(/^Lec:\s*/, "").trim(),
-          day: getDateString(),
+          day: dateString,
           time,
         });
       } else if (content.startsWith("Sec:")) {
         result.push({
           type: "section",
           subject: content.replace(/^Sec:\s*/, "").trim(),
-          day: getDateString(),
+          day: dateString,
+          time,
+        });
+      } else if (content.startsWith("Study:")) {
+        result.push({
+          type: "study",
+          subject: content.replace(/^Study:\s*/, "").trim(),
+          day: dateString,
           time,
         });
       }
@@ -104,191 +113,228 @@ export function TasksProvider({ children }) {
     return result;
   };
 
-  // Refactor checkForMissedTasksEndOfDay to accept a date parameter (defaults to today)
-  const checkForMissedTasksEndOfDay = (dateOverride) => {
-    console.log("[MissedTaskCheck] Running at", new Date().toLocaleString());
-    if (!isTasksLoaded || !userId) return;
-    const dateToCheck = dateOverride || getDateString();
-    const now = getCurrentTimeAsDate();
+  // This is a new, pure function. It calculates missed tasks for a specific date
+  // using the provided data, without causing any side effects.
+  const calculateMissedTasksForDate = (dateString, allTasks) => {
+    const weekKey = getWeekKey(new Date(dateString));
+    const tasksForWeek = allTasks[weekKey] || {
+      completedTasks: [],
+      generatedTasks: [],
+    };
+    const {
+      completedTasks: completedTasksForWeek,
+      generatedTasks: generatedTasksForWeek,
+    } = tasksForWeek;
 
-    // 1. Check lectures/sections
-    const scheduled = getTodaysScheduledLecturesSections();
-    // DEBUG LOG
-    console.log(
-      "[MissedTaskCheck] Scheduled slots for",
-      dateToCheck,
-      scheduled
-    );
-    console.log("[MissedTaskCheck] Completed tasks:", completedTasks);
-    const missedLectSec = scheduled.filter((slot) => {
-      // Use dateToCheck for the day
-      const found = completedTasks.some(
+    const scheduled = getScheduledTasksForDate(dateString);
+
+    const missedScheduled = scheduled.filter((slot) => {
+      const isCompleted = completedTasksForWeek.some(
         (ct) =>
           ct.type === slot.type &&
           ct.subject === slot.subject &&
-          ct.day === dateToCheck &&
+          ct.day === dateString &&
           ct.time === slot.time
       );
-      if (!found) {
-        console.log("[MissedTaskCheck][NO MATCH]", { slot, completedTasks });
+      return !isCompleted;
+    });
+
+    // Also check for generated study tasks on that day that were not completed
+    const missedGeneratedStudy = (generatedTasksForWeek || []).filter(
+      (task) => {
+        if (task.type !== "study" || task.day !== dateString) return false;
+        const isCompleted = completedTasksForWeek.some(
+          (ct) =>
+            ct.type === "study" &&
+            ct.subject === task.subject &&
+            ct.day === task.day &&
+            ct.time === task.time
+        );
+        return !isCompleted;
       }
-      // Only count if the slot is for dateToCheck
-      return !found && slot.day === dateToCheck;
-    });
-    // DEBUG LOG
-    console.log("[MissedTaskCheck] Missed lectures/sections:", missedLectSec);
-
-    // 2. Check follow-up study tasks
-    const missedStudyTasks = generatedTasks.filter((task) => {
-      if (task.type !== "study") return false;
-      if (task.day !== dateToCheck) return false;
-      // Only check if the slot's end time has passed
-      const endTime = parseSlotEndTime(task.time, now);
-      const isTimePassed = endTime && now > endTime;
-      const isNotCompleted = !completedTasks.some(
-        (ct) =>
-          ct.type === "study" &&
-          ct.subject === task.subject &&
-          ct.day === task.day &&
-          ct.time === task.time
-      );
-      return isTimePassed && isNotCompleted;
-    });
-    // DEBUG LOG
-    console.log("[MissedTaskCheck] Missed study tasks:", missedStudyTasks);
-
-    // Add missed lectures/sections to missedTasks
-    if (missedLectSec.length > 0) {
-      setMissedTasks((prev) => {
-        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-        const newMissed = [
-          ...prev,
-          ...missedLectSec.map((task) => ({
-            ...task,
-            courseID:
-              task.courseID ||
-              (currentUser?.courses ? currentUser.courses[0] : null),
-          })),
-        ];
-        // Remove duplicates
-        return newMissed.filter(
-          (task, idx, self) =>
-            idx ===
-            self.findIndex(
-              (t) =>
-                t.type === task.type &&
-                t.subject === task.subject &&
-                t.day === task.day &&
-                t.time === task.time
-            )
-        );
-      });
-    }
-    // Add missed study tasks to missedTasks
-    if (missedStudyTasks.length > 0) {
-      setMissedTasks((prev) => {
-        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-        const newMissed = [
-          ...prev,
-          ...missedStudyTasks.map((t) => ({
-            ...t,
-            type: "study",
-            courseID:
-              t.courseID ||
-              (currentUser?.courses ? currentUser.courses[0] : null),
-          })),
-        ];
-        // Remove duplicates
-        return newMissed.filter(
-          (task, idx, self) =>
-            idx ===
-            self.findIndex(
-              (tt) =>
-                tt.type === task.type &&
-                tt.subject === task.subject &&
-                tt.day === task.day &&
-                tt.time === task.time
-            )
-        );
-      });
-    }
-    // Remove completed study tasks from generatedTasks
-    setGeneratedTasks((prev) =>
-      prev.filter(
-        (task) =>
-          !(
-            task.type === "study" &&
-            completedTasks.some(
-              (ct) =>
-                ct.type === "study" &&
-                ct.subject === task.subject &&
-                ct.day === task.day &&
-                ct.time === task.time
-            )
-          )
-      )
     );
+
+    const allMissed = [...missedScheduled, ...missedGeneratedStudy];
+
+    // Add courseID to new missed tasks
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    return allMissed.map((task) => ({
+      ...task,
+      courseID:
+        task.courseID || (currentUser?.courses ? currentUser.courses[0] : null),
+    }));
   };
 
-  // Function to save missed tasks to database
-  const saveMissedTasksToDatabase = async () => {
-    if (!userId) return;
-    try {
-      await axios.put(
-        `http://localhost:5100/api/user/insights/${userId}`,
-        weeklyTasks
-      );
-      console.log("Missed tasks saved to database");
-    } catch (error) {
-      console.error("Error saving missed tasks:", error);
-    }
-  };
-
-  // Effect to fetch weekly tasks from backend on mount
+  // Unified effect to fetch, catch up, and set initial state
   useEffect(() => {
-    const fetchTasks = async () => {
+    const initializeAndCatchUp = async () => {
       if (!userId) {
         setIsTasksLoaded(true);
         return;
       }
+
       try {
+        // 1. Fetch initial data
         const response = await axios.get(
           `http://localhost:5100/api/user/insights/${userId}`
         );
-        setWeeklyTasks(response.data || {});
+        let tasksData = response.data || {};
+        let wasUpdated = false;
+
+        // 2. Run catch-up logic
+        const lastDateString = localStorage.getItem("lastCheckedDate");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (lastDateString) {
+          const lastDate = new Date(lastDateString);
+          lastDate.setHours(0, 0, 0, 0);
+
+          if (lastDate < today) {
+            const dateIterator = new Date(lastDate);
+            dateIterator.setDate(dateIterator.getDate() + 1);
+
+            while (dateIterator < today) {
+              const dateString = getDateString(dateIterator);
+              const newMissed = calculateMissedTasksForDate(
+                dateString,
+                tasksData
+              );
+
+              if (newMissed.length > 0) {
+                wasUpdated = true;
+                const weekKey = getWeekKey(dateIterator);
+                if (!tasksData[weekKey]) {
+                  tasksData[weekKey] = {
+                    completedTasks: [],
+                    missedTasks: [],
+                    generatedTasks: [],
+                  };
+                }
+                const existingMissed = tasksData[weekKey].missedTasks || [];
+                const combinedMissed = [...existingMissed];
+                newMissed.forEach((missedTask) => {
+                  if (
+                    !combinedMissed.some(
+                      (t) =>
+                        t.day === missedTask.day &&
+                        t.time === missedTask.time &&
+                        t.subject === missedTask.subject
+                    )
+                  ) {
+                    combinedMissed.push(missedTask);
+                  }
+                });
+                tasksData[weekKey].missedTasks = combinedMissed;
+              }
+              dateIterator.setDate(dateIterator.getDate() + 1);
+            }
+          }
+        }
+
+        // 3. If changes were made, save to DB and update local storage date
+        if (wasUpdated) {
+          await axios.put(
+            `http://localhost:5100/api/user/insights/${userId}`,
+            tasksData
+          );
+          // IMPORTANT: Update the date in local storage only after a successful save
+          localStorage.setItem("lastCheckedDate", getDateString(today));
+        }
+
+        // 4. Set state once with the final result
+        setWeeklyTasks(tasksData);
       } catch (error) {
+        console.error("Error during initialization and catch-up:", error);
         setWeeklyTasks({});
       } finally {
         setIsTasksLoaded(true);
       }
     };
-    fetchTasks();
+
+    initializeAndCatchUp();
   }, [userId]);
 
-  // Effect to save weekly tasks to backend whenever weeklyTasks changes (after initial load)
+  // Effect to save weekly tasks to backend whenever they change
   useEffect(() => {
-    if (!isTasksLoaded || !userId) return;
-    axios.put(`http://localhost:5100/api/user/insights/${userId}`, weeklyTasks);
-  }, [weeklyTasks, isTasksLoaded, userId]);
-
-  // Effect to reset for a new week (on Sunday)
-  useEffect(() => {
-    const today = new Date();
-    if (today.getDay() === 0) {
-      // Sunday
-      if (!weeklyTasks[currentWeekKey]) {
-        // Start a new week with empty arrays
-        setWeeklyTasks((prev) => ({
-          ...prev,
-          [currentWeekKey]: {
-            completedTasks: [],
-            missedTasks: [],
-            generatedTasks: [],
-          },
-        }));
-      }
+    // We don't want to save on the very first render cycle.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }, [currentWeekKey, weeklyTasks]);
+
+    if (!isTasksLoaded || !userId) return;
+
+    axios
+      .put(`http://localhost:5100/api/user/insights/${userId}`, weeklyTasks)
+      .catch((err) => {
+        console.error("[DB Save] Error saving to database:", err);
+      });
+  }, [weeklyTasks, userId, isTasksLoaded]);
+
+  // Effect to set up daily midnight check for missed sessions
+  useEffect(() => {
+    if (!isTasksLoaded) return;
+
+    const scheduleMidnightCheck = () => {
+      const now = new Date();
+      const target = new Date(now);
+      target.setHours(23, 59, 0, 0); // 11:59 PM today
+      if (now > target) {
+        // If it's already past 11:59 PM, set for tomorrow
+        target.setDate(target.getDate() + 1);
+      }
+      console.log("[Timer] Scheduled for:", target.toLocaleString());
+      const timeUntilTarget = target.getTime() - now.getTime();
+      const timeoutId = setTimeout(() => {
+        console.log(
+          "[Timer] Midnight check running at",
+          new Date().toLocaleString()
+        );
+        // Rerun the check for today and update state
+        const todayString = getDateString();
+        const newMissed = calculateMissedTasksForDate(todayString, weeklyTasks);
+        console.log(
+          `[Timer] Found ${newMissed.length} missed tasks for today.`
+        );
+        if (newMissed.length > 0) {
+          const weekKey = getWeekKey(new Date());
+          console.log(`[Timer] Updating missed tasks for week ${weekKey}.`);
+          setWeeklyTasks((prev) => {
+            const week = prev[weekKey] || {
+              completedTasks: [],
+              missedTasks: [],
+              generatedTasks: [],
+            };
+            const combined = [...(week.missedTasks || [])];
+            newMissed.forEach((missedTask) => {
+              if (
+                !combined.some(
+                  (t) =>
+                    t.day === missedTask.day &&
+                    t.time === missedTask.time &&
+                    t.subject === missedTask.subject
+                )
+              ) {
+                combined.push(missedTask);
+              }
+            });
+            return {
+              ...prev,
+              [weekKey]: { ...week, missedTasks: combined },
+            };
+          });
+        }
+        localStorage.setItem("lastCheckedDate", todayString);
+        scheduleMidnightCheck();
+      }, timeUntilTarget);
+      return timeoutId;
+    };
+
+    const timeoutId = scheduleMidnightCheck();
+
+    return () => clearTimeout(timeoutId);
+  }, [isTasksLoaded, weeklyTasks, userId]);
 
   // Update all usages of setCompletedTasks, setMissedTasks, setGeneratedTasks
   const setCompletedTasks = (fn) => {
@@ -349,86 +395,6 @@ export function TasksProvider({ children }) {
     });
   };
 
-  // On app load, if lastCheckedDate is not today and current time is after scheduled time, run the missed task check for today
-  useEffect(() => {
-    if (!isTasksLoaded) return;
-    const today = getDateString();
-    const now = new Date();
-    const scheduledHour = 23;
-    const scheduledMinute = 59;
-    console.log(
-      "[CatchUp] Effect running. lastCheckedDate:",
-      lastCheckedDate,
-      "today:",
-      today,
-      "now:",
-      now.toLocaleString()
-    );
-    if (
-      lastCheckedDate !== today &&
-      (now.getHours() > scheduledHour ||
-        (now.getHours() === scheduledHour &&
-          now.getMinutes() >= scheduledMinute))
-    ) {
-      console.log(
-        "[CatchUp] Running missed task check for today on app load. lastCheckedDate:",
-        lastCheckedDate,
-        "today:",
-        today
-      );
-      checkForMissedTasksEndOfDay(today);
-      setLastCheckedDate(today);
-      console.log("[CatchUp] lastCheckedDate updated to:", today);
-    } else {
-      console.log(
-        "[CatchUp] No catch-up needed. lastCheckedDate:",
-        lastCheckedDate,
-        "today:",
-        today,
-        "now:",
-        now.toLocaleString()
-      );
-    }
-  }, [isTasksLoaded, lastCheckedDate, generatedTasks, completedTasks]);
-
-  // Effect to set up daily midnight check for missed sessions
-  useEffect(() => {
-    if (!isTasksLoaded) return;
-
-    const scheduleMidnightCheck = () => {
-      const now = new Date();
-      const target = new Date(now);
-      target.setHours(23, 59, 0, 0); // 11:59 PM today
-      if (now > target) {
-        // If it's already past 11:59 PM, set for tomorrow
-        target.setDate(target.getDate() + 1);
-      }
-      console.log("[Timer] Scheduled for:", target.toLocaleString());
-      const timeUntilTarget = target.getTime() - now.getTime();
-      const timeoutId = setTimeout(() => {
-        console.log(
-          "[Timer] Missed task check running at",
-          new Date().toLocaleString()
-        );
-        checkForMissedTasksEndOfDay();
-        scheduleMidnightCheck();
-      }, timeUntilTarget);
-      return timeoutId;
-    };
-
-    const timeoutId = scheduleMidnightCheck();
-
-    return () => clearTimeout(timeoutId);
-  }, [isTasksLoaded, generatedTasks, completedTasks, userId]);
-
-  // Save missedTasks to database whenever missedTasks changes (after initial load)
-  useEffect(() => {
-    if (!isTasksLoaded || !userId) return;
-    if (missedTasks.length > 0) {
-      saveMissedTasksToDatabase();
-    }
-  }, [missedTasks]);
-
   // Add this function below setCompletedTasks
   const setCompletedTasksForWeek = (weekKey, fn) => {
     setWeeklyTasks((prev) => {
@@ -450,6 +416,25 @@ export function TasksProvider({ children }) {
     });
   };
 
+  const setMissedTasksForWeek = (weekKey, fn) => {
+    setWeeklyTasks((prev) => {
+      const week = prev[weekKey] || {
+        completedTasks: [],
+        missedTasks: [],
+        generatedTasks: [],
+      };
+      const newMissedTasks =
+        typeof fn === "function" ? fn(week.missedTasks) : fn;
+      return {
+        ...prev,
+        [weekKey]: {
+          ...week,
+          missedTasks: newMissedTasks,
+        },
+      };
+    });
+  };
+
   // Add this function to get completedTasks for any week
   const getCompletedTasksForWeek = (weekKey) => {
     return weeklyTasks[weekKey]?.completedTasks || [];
@@ -461,12 +446,12 @@ export function TasksProvider({ children }) {
         completedTasks,
         setCompletedTasks,
         setCompletedTasksForWeek,
+        setMissedTasksForWeek,
         getCompletedTasksForWeek,
         missedTasks,
         setMissedTasks,
         generatedTasks,
         setGeneratedTasks,
-        checkForMissedTasksEndOfDay,
       }}
     >
       {children}

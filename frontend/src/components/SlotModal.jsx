@@ -62,7 +62,10 @@ function SlotModal({
     const courseID = await fetchCourseIdForSubject(subject);
     const weekKey = getWeekKey(new Date(formDetails.day));
     const detailsWithCourse = { ...formDetails, courseID };
-    setCompletedTasksForWeek(weekKey, (prev) => [...prev, detailsWithCourse]);
+    setCompletedTasksForWeek(weekKey, (prev = []) => [
+      ...prev,
+      detailsWithCourse,
+    ]);
     if (eventType === "lecture" || eventType === "section") {
       const followUpTask = {
         type: "generated",
@@ -74,7 +77,7 @@ function SlotModal({
         timestamp: Date.now(),
         courseID,
       };
-      setGeneratedTasks((prev) => [...prev, followUpTask]);
+      setGeneratedTasks((prev = []) => [...prev, followUpTask]);
     }
     onClose();
   };
