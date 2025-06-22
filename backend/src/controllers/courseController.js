@@ -1,5 +1,5 @@
 import { db } from "../config/adminFirebase.js";
-import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
+import { collection, getDocs, query, where, getDoc, doc, documentId } from "firebase/firestore";
 
 // Get all courses
 export const getAllCourses = async (req, res) => {
@@ -93,7 +93,7 @@ export const getFilteredCourse = async (req, res) => {
         const q = query(
             coursesCollectionRef,
             where("courseName", "==", name),
-            where(db.app.firestore.FieldPath.documentId(), "in", enrolledIdsArray)
+            where(documentId(), "in", enrolledIdsArray)
         );
         const querySnapshot = await getDocs(q);
 

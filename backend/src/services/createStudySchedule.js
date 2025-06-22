@@ -30,13 +30,12 @@ export const createStudySchedule = async (studentData) => {
 
     // Create course-sessions mapping
     const courseSessionsMapping = {};
-    if (studentData.courses && Array.isArray(studentData.courses)) {
-        timeslotPrediction.forEach(prediction => {
-            const course = studentData.courses.find(c => c.courseName === prediction.course);
-            if (course && course.id) {
-                courseSessionsMapping[course.id] = prediction.sessions;
-            }
-        });
+    for (const [courseName, value] of Object.entries(timeslotPrediction)) {
+        const course = studentData.courses.find(c => c.courseName === courseName);
+        if (course && course.id) {
+            // value[1] is the number of sessions
+            courseSessionsMapping[course.id] = value[1];
+        }
     }
 
     console.log("THIS IS Course Sessions MappingGGGGGGGGGGGGGGGGGGGGGGGGG:", courseSessionsMapping);
