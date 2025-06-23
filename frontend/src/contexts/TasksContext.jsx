@@ -21,6 +21,9 @@ export function TasksProvider({ children }) {
   const missedTasks = weeklyTasks[currentWeekKey]?.missedTasks || [];
   const generatedTasks = weeklyTasks[currentWeekKey]?.generatedTasks || [];
 
+  // Add a ref to track processed missed tasks and prevent double scheduling
+  const processedReschedulesRef = useRef(new Set());
+
   // Helper to update a specific week's arrays
   function updateWeekTasks(updates) {
     setWeeklyTasks((prev) => ({
@@ -128,6 +131,10 @@ export function TasksProvider({ children }) {
 
     const scheduled = getScheduledTasksForDate(dateString);
 
+    // Debug: Log scheduled and completed tasks for the date
+    console.log(`[DEBUG] Scheduled for ${dateString}:`, scheduled);
+    console.log(`[DEBUG] Completed for ${dateString}:`, completedTasksForWeek);
+
     const missedScheduled = scheduled.filter((slot) => {
       const isCompleted = completedTasksForWeek.some(
         (ct) =>
@@ -136,6 +143,9 @@ export function TasksProvider({ children }) {
           ct.day === dateString &&
           ct.time === slot.time
       );
+      if (!isCompleted) {
+        console.log(`[DEBUG] Missed scheduled:`, slot);
+      }
       return !isCompleted;
     });
 
@@ -150,6 +160,9 @@ export function TasksProvider({ children }) {
             ct.day === task.day &&
             ct.time === task.time
         );
+        if (!isCompleted) {
+          console.log(`[DEBUG] Missed generated study:`, task);
+        }
         return !isCompleted;
       }
     );
@@ -196,9 +209,14 @@ export function TasksProvider({ children }) {
 
             while (dateIterator < today) {
               const dateString = getDateString(dateIterator);
+              console.log(`[DEBUG] Checking missed tasks for ${dateString}`);
               const newMissed = calculateMissedTasksForDate(
                 dateString,
                 tasksData
+              );
+              console.log(
+                `[DEBUG] Missed tasks found for ${dateString}:`,
+                newMissed
               );
 
               if (newMissed.length > 0) {
@@ -238,9 +256,9 @@ export function TasksProvider({ children }) {
             `http://localhost:5100/api/user/insights/${userId}`,
             tasksData
           );
-          // IMPORTANT: Update the date in local storage only after a successful save
-          localStorage.setItem("lastCheckedDate", getDateString(today));
         }
+        // Always update lastCheckedDate after catch-up
+        localStorage.setItem("lastCheckedDate", getDateString(today));
 
         // 4. Set state once with the final result
         setWeeklyTasks(tasksData);
@@ -439,6 +457,159 @@ export function TasksProvider({ children }) {
   const getCompletedTasksForWeek = (weekKey) => {
     return weeklyTasks[weekKey]?.completedTasks || [];
   };
+
+  // Automatically reschedule missed tasks within 24 hours, finding a free slot
+  useEffect(() => {
+    if (!isTasksLoaded) return;
+    if (!generatedTasks || generatedTasks.length === 0) return;
+
+    // Canonical list of possible timeslots
+    const timeslots = [
+      "8AM-10AM",
+      "10AM-12PM",
+      "12PM-2PM",
+      "2PM-4PM",
+      "4PM-6PM",
+      "6PM-8PM",
+      "8PM-10PM",
+    ];
+    const daysOfWeek = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+
+    missedTasks.forEach((missedTask, idx) => {
+      // Only reschedule missed study sessions
+      if (missedTask.type !== "study") return;
+      if (missedTask.rescheduleProcessed) return;
+      const rescheduleKey = `${missedTask.day}|${missedTask.time}|${missedTask.subject}|${missedTask.type}`;
+      // Debug: Show what we're checking for
+      console.log(
+        "[RESCHEDULE] Checking for already rescheduled:",
+        rescheduleKey,
+        generatedTasks
+      );
+      // Prevent double scheduling in this session
+      if (processedReschedulesRef.current.has(rescheduleKey)) return;
+      const alreadyRescheduled = generatedTasks.some(
+        (task) => task.rescheduledFrom === rescheduleKey
+      );
+      if (alreadyRescheduled) {
+        console.log(
+          "[RESCHEDULE] Already rescheduled, skipping:",
+          rescheduleKey
+        );
+        return;
+      }
+      // Try to find a free slot within 24 hours after the missed session
+      const missedDate = new Date(missedTask.day + "T00:00:00");
+      let found = false;
+      for (let dayOffset = 1; dayOffset <= 1 && !found; dayOffset++) {
+        // Only next day (24 hours)
+        const newDate = new Date(missedDate);
+        newDate.setDate(missedDate.getDate() + dayOffset);
+        const yyyy = newDate.getFullYear();
+        const mm = String(newDate.getMonth() + 1).padStart(2, "0");
+        const dd = String(newDate.getDate()).padStart(2, "0");
+        const newDateString = `${yyyy}-${mm}-${dd}`;
+        const dayName = daysOfWeek[newDate.getDay()];
+        // Get current user's schedule from localStorage
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        if (
+          !currentUser ||
+          !currentUser.timetable ||
+          !currentUser.timetable.schedule
+        )
+          continue;
+        if (!currentUser.timetable.schedule[dayName]) {
+          currentUser.timetable.schedule[dayName] = {};
+        }
+        for (const slot of timeslots) {
+          if (
+            !currentUser.timetable.schedule[dayName][slot] ||
+            currentUser.timetable.schedule[dayName][slot] === ""
+          ) {
+            // Found a free slot
+            let rescheduledType = "rescheduled-" + missedTask.type;
+            const newTask = {
+              ...missedTask,
+              day: newDateString,
+              time: slot,
+              rescheduledFrom: rescheduleKey,
+              isRescheduled: true,
+              type: rescheduledType,
+              subject: `Study rescheduled session for ${missedTask.subject}`,
+            };
+            setGeneratedTasks((prev) => [...prev, newTask]);
+            // Add to timetable
+            currentUser.timetable.schedule[dayName][
+              slot
+            ] = `Study: rescheduled session for ${missedTask.subject}`;
+            localStorage.setItem("currentUser", JSON.stringify(currentUser));
+            // --- Update weeklyTasks state to reflect the new generated task and updated schedule ---
+            setWeeklyTasks((prev) => {
+              // Find the week key for the new date
+              const weekKey = getWeekKey(newDate);
+              const week = prev[weekKey] || {
+                completedTasks: [],
+                missedTasks: [],
+                generatedTasks: [],
+              };
+              // Add the new generated task if not already present
+              const alreadyInGenerated = week.generatedTasks.some(
+                (t) =>
+                  t.day === newTask.day &&
+                  t.time === newTask.time &&
+                  t.subject === newTask.subject &&
+                  t.type === newTask.type
+              );
+              const updatedGeneratedTasks = alreadyInGenerated
+                ? week.generatedTasks
+                : [...week.generatedTasks, newTask];
+              // Mark the missed task as processed in missedTasks
+              const updatedMissedTasks = week.missedTasks.map((mt) =>
+                mt.day === missedTask.day &&
+                mt.time === missedTask.time &&
+                mt.subject === missedTask.subject &&
+                mt.type === missedTask.type
+                  ? { ...mt, rescheduleProcessed: true }
+                  : mt
+              );
+              return {
+                ...prev,
+                [weekKey]: {
+                  ...week,
+                  generatedTasks: updatedGeneratedTasks,
+                  missedTasks: updatedMissedTasks,
+                },
+              };
+            });
+            // Mark this missed task as processed for this session
+            processedReschedulesRef.current.add(rescheduleKey);
+            // Save the updated timetable to the backend using the correct endpoint
+            axios
+              .put("http://localhost:5100/api/quiz/update-user", {
+                userId: currentUser.id,
+                timetable: { schedule: currentUser.timetable.schedule },
+              })
+              .catch((err) => {
+                console.error(
+                  "Failed to save updated timetable to backend:",
+                  err
+                );
+              });
+            found = true;
+            break;
+          }
+        }
+      }
+    });
+  }, [missedTasks, isTasksLoaded, generatedTasks, setGeneratedTasks]);
 
   return (
     <TasksContext.Provider

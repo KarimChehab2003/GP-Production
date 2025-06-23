@@ -25,18 +25,33 @@ function Layout() {
 
   useEffect(() => {
     // Notification logic
-    if (currentUser && currentUser.timetable && currentUser.timetable.schedule) {
+    if (
+      currentUser &&
+      currentUser.timetable &&
+      currentUser.timetable.schedule
+    ) {
       const schedule = currentUser.timetable.schedule;
-      const { currentDay, currentSlot, currentSlotStart } = getCurrentDayAndSlot();
-      if (currentDay && currentSlot && schedule[currentDay] && currentSlot in schedule[currentDay]) {
+      const { currentDay, currentSlot, currentSlotStart } =
+        getCurrentDayAndSlot();
+      if (
+        currentDay &&
+        currentSlot &&
+        schedule[currentDay] &&
+        currentSlot in schedule[currentDay]
+      ) {
         const activity = schedule[currentDay][currentSlot];
         if (!activity || activity === "") {
           setNotifications([
             { id: Date.now() + 1, message: "You have a free time slot now" },
           ]);
-          const { nextActivity, nextActivityTime } = getNextActivity(schedule, currentDay, currentSlot, currentSlotStart);
+          const { nextActivity, nextActivityTime } = getNextActivity(
+            schedule,
+            currentDay,
+            currentSlot,
+            currentSlotStart
+          );
           if (nextActivity) {
-            setNotifications(prev => [
+            setNotifications((prev) => [
               ...prev,
               {
                 id: Date.now() + 2,
@@ -52,6 +67,36 @@ function Layout() {
       }
     }
   }, [currentUser]);
+
+  // Auto-trigger Adapt Schedule after 2 weeks (2 Sundays)
+  useEffect(() => {
+    const today = new Date();
+    const isSunday = today.getDay() === 0;
+    const lastAdaptDateStr = localStorage.getItem("lastAdaptScheduleDate");
+    let shouldAdapt = false;
+    if (isSunday) {
+      if (!lastAdaptDateStr) {
+        shouldAdapt = true;
+      } else {
+        const lastAdaptDate = new Date(lastAdaptDateStr);
+        // Calculate the number of Sundays since last adaptation
+        let sundaysPassed = 0;
+        let d = new Date(lastAdaptDate);
+        d.setHours(0, 0, 0, 0);
+        while (d < today) {
+          d.setDate(d.getDate() + 1);
+          if (d.getDay() === 0) sundaysPassed++;
+        }
+        if (sundaysPassed >= 2) {
+          shouldAdapt = true;
+        }
+      }
+      if (shouldAdapt) {
+        handleAdaptSchedule();
+        localStorage.setItem("lastAdaptScheduleDate", today.toISOString());
+      }
+    }
+  }, []);
 
   const handleCloseSettingsModal = () => {
     setIsSettingsModalOpen(false);
@@ -122,6 +167,8 @@ function Layout() {
 
       setCurrentUser(student); // Update state if needed
       console.log("Adapted Schedule Result:", studyPlan);
+      // Set lastAdaptScheduleDate in localStorage
+      localStorage.setItem("lastAdaptScheduleDate", new Date().toISOString());
     } catch (error) {
       console.error("Error calling adapt-schedule:", error);
     }
@@ -129,10 +176,18 @@ function Layout() {
 
   function getCurrentDayAndSlot() {
     const now = new Date();
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
     const currentDay = days[now.getDay()];
     const currentHour = now.getHours();
-    
+
     const slots = [
       { label: "8AM-10AM", start: 8, end: 10 },
       { label: "10AM-12PM", start: 10, end: 12 },
@@ -142,12 +197,26 @@ function Layout() {
       { label: "6PM-8PM", start: 18, end: 20 },
       { label: "8PM-10PM", start: 20, end: 22 },
     ];
-    const currentSlot = slots.find(s => currentHour >= s.start && currentHour < s.end);
-    return { currentDay, currentSlot: currentSlot ? currentSlot.label : null, currentSlotStart: currentSlot ? currentSlot.start : null };
+    const currentSlot = slots.find(
+      (s) => currentHour >= s.start && currentHour < s.end
+    );
+    return {
+      currentDay,
+      currentSlot: currentSlot ? currentSlot.label : null,
+      currentSlotStart: currentSlot ? currentSlot.start : null,
+    };
   }
 
   function getNextActivity(schedule, day, slotLabel, slotStart) {
-    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const daysOfWeek = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
     let foundCurrent = false;
     let minDiff = Infinity;
     let nextActivity = null;
@@ -156,7 +225,13 @@ function Layout() {
       const d = daysOfWeek[(daysOfWeek.indexOf(day) + i) % 7];
       const slots = schedule[d] || {};
       for (const slot of [
-        "8AM-10AM", "10AM-12PM", "12PM-2PM", "2PM-4PM", "4PM-6PM", "6PM-8PM", "8PM-10PM"
+        "8AM-10AM",
+        "10AM-12PM",
+        "12PM-2PM",
+        "2PM-4PM",
+        "4PM-6PM",
+        "6PM-8PM",
+        "8PM-10PM",
       ]) {
         if (d === day && slotLabel) {
           // Only start looking after the current slot
@@ -172,8 +247,9 @@ function Layout() {
           let slotHour = parseInt(slot.split("-")[0]);
           if (slot.includes("PM") && slotHour !== 12) slotHour += 12;
           if (slot.includes("AM") && slotHour === 12) slotHour = 0;
-          let dayDiff = (daysOfWeek.indexOf(d) - daysOfWeek.indexOf(day) + 7) % 7;
-          let hourDiff = (dayDiff * 24 + slotHour - slotStart);
+          let dayDiff =
+            (daysOfWeek.indexOf(d) - daysOfWeek.indexOf(day) + 7) % 7;
+          let hourDiff = dayDiff * 24 + slotHour - slotStart;
           if (hourDiff <= 0) hourDiff += 24 * 7; // wrap around week
           if (hourDiff < minDiff) {
             minDiff = hourDiff;
@@ -183,7 +259,10 @@ function Layout() {
         }
       }
     }
-    return { nextActivity, nextActivityTime: minDiff !== Infinity ? minDiff : null };
+    return {
+      nextActivity,
+      nextActivityTime: minDiff !== Infinity ? minDiff : null,
+    };
   }
 
   return (
@@ -205,9 +284,13 @@ function Layout() {
             )}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-96 bg-white text-black rounded shadow-lg z-50">
-                <div className="p-3 font-semibold border-b text-center">My Notifications</div>
+                <div className="p-3 font-semibold border-b text-center">
+                  My Notifications
+                </div>
                 {notifications.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No notifications</div>
+                  <div className="p-4 text-center text-gray-500">
+                    No notifications
+                  </div>
                 ) : (
                   notifications.map((notification) => (
                     <div

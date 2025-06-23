@@ -225,6 +225,11 @@ function Timeslot({
           case "failedQuiz":
             baseClasses += "bg-red-500/20 ";
             break;
+          case "rescheduled-lecture":
+          case "rescheduled-section":
+          case "rescheduled-study":
+            baseClasses += "bg-yellow-400/30 ";
+            break;
           default:
             break;
         }
