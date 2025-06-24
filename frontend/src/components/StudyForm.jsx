@@ -15,7 +15,13 @@ function StudyForm({
   slotDate,
   weekStart,
 }) {
-  const { setTasks, setCompletedTasks, setCompletedTasksForWeek } = useTasks(); // Use the hook here
+  const {
+    setTasks,
+    setCompletedTasks,
+    setCompletedTasksForWeek,
+    setGeneratedTasks,
+    removeFollowUpTasksForSubject,
+  } = useTasks(); // Use the hook here
   const [lectureCount, setLectureCount] = useState(1);
   const [lectureDetails, setLectureDetails] = useState(
     modalQuizLectureNumber
@@ -169,6 +175,10 @@ function StudyForm({
       // Use weekStart or slotDate to get the correct week key
       const weekKey = getWeekKey(new Date(slotDate));
       setCompletedTasksForWeek(weekKey, (prev) => [...prev, studyTask]);
+
+      // Remove related follow-up tasks from generatedTasks
+      const subjectName = subject.replace(/^Study:\s*/, "").trim();
+      removeFollowUpTasksForSubject(subjectName, learningSequence);
 
       const learningObjectiveIds = [];
       const evaluationIds = [];

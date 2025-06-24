@@ -254,7 +254,14 @@ function Timeslot({
   const displayContent = () => {
     if (!content) return "";
     if (typeof content === "object" && content !== null) {
-      return content.subject || "";
+      let subject = content.subject || "";
+      if (subject.includes("(Rescheduled)")) {
+        subject = subject.replace(/\s*\(Rescheduled\)$/, "");
+      }
+      return subject;
+    }
+    if (typeof content === "string" && content.includes("(Rescheduled)")) {
+      return content.replace(/\s*\(Rescheduled\)$/, "");
     }
     return content;
   };
@@ -273,6 +280,17 @@ function Timeslot({
           {displayContent()}
         </p>
       )}
+      {/* Show rescheduled indicator */}
+      {type === "slot" &&
+        content &&
+        ((typeof content === "string" && content.includes("(Rescheduled)")) ||
+          (typeof content === "object" &&
+            content.subject &&
+            content.subject.includes("(Rescheduled)"))) && (
+          <div className="absolute top-1 left-1 bg-yellow-500 text-white text-xs px-1 py-0.5 rounded-full font-bold">
+            R
+          </div>
+        )}
       {isCompleted &&
         type === "slot" &&
         (() => {

@@ -47,9 +47,44 @@ function Calendar({ setTaskList, ignoreSlotRestrictions = false }) {
   // State to hold the calendar data and week start
   const [calendarData, setCalendarData] = useState([]);
   const [weekStart, setWeekStart] = useState(() => getCurrentWeekStart());
-  const { checkForMissedTasksEndOfDay, getCompletedTasksForWeek } = useTasks();
+  const {
+    checkForMissedTasksEndOfDay,
+    getCompletedTasksForWeek,
+    isTasksLoaded,
+    isCalendarReady,
+    setIsCalendarReady,
+    triggerMissedTasksCheckup,
+  } = useTasks();
   const weekKey = getWeekKey(weekStart);
   const completedTasks = getCompletedTasksForWeek(weekKey);
+
+  // Signal that calendar is ready and trigger missed tasks checkup
+  useEffect(() => {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (currentUser && currentUser.id) {
+      console.log("[CALENDAR] Calendar component mounted, signaling ready...");
+      setIsCalendarReady(true);
+
+      // Trigger missed tasks checkup if not already loaded
+      if (!isTasksLoaded) {
+        console.log("[CALENDAR] Tasks not loaded, triggering checkup...");
+        triggerMissedTasksCheckup().catch((err) => {
+          console.error(
+            "[CALENDAR] Error triggering missed tasks checkup:",
+            err
+          );
+        });
+      }
+    }
+
+    // Cleanup function to reset ready state when component unmounts
+    return () => {
+      console.log(
+        "[CALENDAR] Calendar component unmounting, resetting ready state..."
+      );
+      setIsCalendarReady(false);
+    };
+  }, [setIsCalendarReady, isTasksLoaded, triggerMissedTasksCheckup]);
 
   // Function to create the calendar data
   const createCalendar = () => {
@@ -252,9 +287,19 @@ function Calendar({ setTaskList, ignoreSlotRestrictions = false }) {
                 content = col.subject;
               }
               if (typeof content === "string" && content.startsWith("Study:")) {
-                sessionCategory = "study";
-                modalEventType = "Study";
-                modalSubject = content.replace(/^Study:\s*/, "").trim();
+                // Check if it's a rescheduled study session
+                if (content.includes("(Rescheduled)")) {
+                  sessionCategory = "rescheduled-study";
+                  modalEventType = "Study";
+                  modalSubject = content
+                    .replace(/^Study:\s*/, "")
+                    .replace(/\s*\(Rescheduled\)$/, "")
+                    .trim();
+                } else {
+                  sessionCategory = "study";
+                  modalEventType = "Study";
+                  modalSubject = content.replace(/^Study:\s*/, "").trim();
+                }
               } else if (
                 typeof content === "string" &&
                 content.startsWith("Lec:")

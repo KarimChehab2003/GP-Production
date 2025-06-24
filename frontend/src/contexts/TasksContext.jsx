@@ -7,6 +7,7 @@ export function TasksProvider({ children }) {
   // Store all weeks' data in an object
   const [weeklyTasks, setWeeklyTasks] = useState({});
   const [isTasksLoaded, setIsTasksLoaded] = useState(false);
+  const [isCalendarReady, setIsCalendarReady] = useState(false);
   const isInitialMount = useRef(true);
 
   // Get userId from localStorage
@@ -23,6 +24,46 @@ export function TasksProvider({ children }) {
 
   // Add a ref to track processed missed tasks and prevent double scheduling
   const processedReschedulesRef = useRef(new Set());
+
+  // Load processed reschedules from localStorage on mount
+  useEffect(() => {
+    const savedProcessedReschedules = localStorage.getItem(
+      "processedReschedules"
+    );
+    if (savedProcessedReschedules) {
+      const parsed = JSON.parse(savedProcessedReschedules);
+      processedReschedulesRef.current = new Set(parsed);
+    }
+    // Clean up old processed reschedules
+    cleanupOldProcessedReschedules();
+  }, []);
+
+  // Save processed reschedules to localStorage whenever it changes
+  const saveProcessedReschedules = () => {
+    localStorage.setItem(
+      "processedReschedules",
+      JSON.stringify([...processedReschedulesRef.current])
+    );
+  };
+
+  // Clean up old processed reschedules (older than 7 days)
+  const cleanupOldProcessedReschedules = () => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoString = oneWeekAgo.toISOString().split("T")[0];
+
+    const filtered = [...processedReschedulesRef.current].filter((key) => {
+      const parts = key.split("|");
+      if (parts.length >= 1) {
+        const taskDate = parts[0]; // day is the first part
+        return taskDate >= oneWeekAgoString;
+      }
+      return true; // Keep if we can't parse the date
+    });
+
+    processedReschedulesRef.current = new Set(filtered);
+    saveProcessedReschedules();
+  };
 
   // Helper to update a specific week's arrays
   function updateWeekTasks(updates) {
@@ -179,99 +220,95 @@ export function TasksProvider({ children }) {
   };
 
   // Unified effect to fetch, catch up, and set initial state
-  useEffect(() => {
-    const initializeAndCatchUp = async () => {
-      if (!userId) {
-        setIsTasksLoaded(true);
-        return;
-      }
+  const initializeAndCatchUp = async () => {
+    if (!userId) {
+      setIsTasksLoaded(true);
+      return;
+    }
 
-      try {
-        // 1. Fetch initial data
-        const response = await axios.get(
-          `http://localhost:5100/api/user/insights/${userId}`
-        );
-        let tasksData = response.data || {};
-        let wasUpdated = false;
+    try {
+      // 1. Fetch initial data
+      const response = await axios.get(
+        `http://localhost:5100/api/user/insights/${userId}`
+      );
+      let tasksData = response.data || {};
+      let wasUpdated = false;
 
-        // 2. Run catch-up logic
-        const lastDateString = localStorage.getItem("lastCheckedDate");
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+      // 2. Run catch-up logic
+      const lastDateString = localStorage.getItem("lastCheckedDate");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-        if (lastDateString) {
-          const lastDate = new Date(lastDateString);
-          lastDate.setHours(0, 0, 0, 0);
+      if (lastDateString) {
+        const lastDate = new Date(lastDateString);
+        lastDate.setHours(0, 0, 0, 0);
 
-          if (lastDate < today) {
-            const dateIterator = new Date(lastDate);
-            dateIterator.setDate(dateIterator.getDate() + 1);
+        if (lastDate < today) {
+          const dateIterator = new Date(lastDate);
+          dateIterator.setDate(dateIterator.getDate() + 1);
 
-            while (dateIterator < today) {
-              const dateString = getDateString(dateIterator);
-              console.log(`[DEBUG] Checking missed tasks for ${dateString}`);
-              const newMissed = calculateMissedTasksForDate(
-                dateString,
-                tasksData
-              );
-              console.log(
-                `[DEBUG] Missed tasks found for ${dateString}:`,
-                newMissed
-              );
+          while (dateIterator < today) {
+            const dateString = getDateString(dateIterator);
+            console.log(`[DEBUG] Checking missed tasks for ${dateString}`);
+            const newMissed = calculateMissedTasksForDate(
+              dateString,
+              tasksData
+            );
+            console.log(
+              `[DEBUG] Missed tasks found for ${dateString}:`,
+              newMissed
+            );
 
-              if (newMissed.length > 0) {
-                wasUpdated = true;
-                const weekKey = getWeekKey(dateIterator);
-                if (!tasksData[weekKey]) {
-                  tasksData[weekKey] = {
-                    completedTasks: [],
-                    missedTasks: [],
-                    generatedTasks: [],
-                  };
-                }
-                const existingMissed = tasksData[weekKey].missedTasks || [];
-                const combinedMissed = [...existingMissed];
-                newMissed.forEach((missedTask) => {
-                  if (
-                    !combinedMissed.some(
-                      (t) =>
-                        t.day === missedTask.day &&
-                        t.time === missedTask.time &&
-                        t.subject === missedTask.subject
-                    )
-                  ) {
-                    combinedMissed.push(missedTask);
-                  }
-                });
-                tasksData[weekKey].missedTasks = combinedMissed;
+            if (newMissed.length > 0) {
+              wasUpdated = true;
+              const weekKey = getWeekKey(dateIterator);
+              if (!tasksData[weekKey]) {
+                tasksData[weekKey] = {
+                  completedTasks: [],
+                  missedTasks: [],
+                  generatedTasks: [],
+                };
               }
-              dateIterator.setDate(dateIterator.getDate() + 1);
+              const existingMissed = tasksData[weekKey].missedTasks || [];
+              const combinedMissed = [...existingMissed];
+              newMissed.forEach((missedTask) => {
+                if (
+                  !combinedMissed.some(
+                    (t) =>
+                      t.day === missedTask.day &&
+                      t.time === missedTask.time &&
+                      t.subject === missedTask.subject
+                  )
+                ) {
+                  combinedMissed.push(missedTask);
+                }
+              });
+              tasksData[weekKey].missedTasks = combinedMissed;
             }
+            dateIterator.setDate(dateIterator.getDate() + 1);
           }
         }
-
-        // 3. If changes were made, save to DB and update local storage date
-        if (wasUpdated) {
-          await axios.put(
-            `http://localhost:5100/api/user/insights/${userId}`,
-            tasksData
-          );
-        }
-        // Always update lastCheckedDate after catch-up
-        localStorage.setItem("lastCheckedDate", getDateString(today));
-
-        // 4. Set state once with the final result
-        setWeeklyTasks(tasksData);
-      } catch (error) {
-        console.error("Error during initialization and catch-up:", error);
-        setWeeklyTasks({});
-      } finally {
-        setIsTasksLoaded(true);
       }
-    };
 
-    initializeAndCatchUp();
-  }, [userId]);
+      // 3. If changes were made, save to DB and update local storage date
+      if (wasUpdated) {
+        await axios.put(
+          `http://localhost:5100/api/user/insights/${userId}`,
+          tasksData
+        );
+      }
+      // Always update lastCheckedDate after catch-up
+      localStorage.setItem("lastCheckedDate", getDateString(today));
+
+      // 4. Set state once with the final result
+      setWeeklyTasks(tasksData);
+    } catch (error) {
+      console.error("Error during initialization and catch-up:", error);
+      setWeeklyTasks({});
+    } finally {
+      setIsTasksLoaded(true);
+    }
+  };
 
   // Effect to save weekly tasks to backend whenever they change
   useEffect(() => {
@@ -353,6 +390,24 @@ export function TasksProvider({ children }) {
 
     return () => clearTimeout(timeoutId);
   }, [isTasksLoaded, weeklyTasks, userId]);
+
+  // Effect to trigger missed tasks checkup when calendar is ready and user is logged in
+  useEffect(() => {
+    if (isCalendarReady && userId && !isTasksLoaded) {
+      console.log(
+        "[CALENDAR] Calendar is ready, triggering missed tasks checkup..."
+      );
+      initializeAndCatchUp();
+    }
+  }, [isCalendarReady, userId, isTasksLoaded]);
+
+  // Effect to reset calendar ready state when user changes
+  useEffect(() => {
+    if (!userId) {
+      setIsCalendarReady(false);
+      setIsTasksLoaded(false);
+    }
+  }, [userId]);
 
   // Update all usages of setCompletedTasks, setMissedTasks, setGeneratedTasks
   const setCompletedTasks = (fn) => {
@@ -458,6 +513,121 @@ export function TasksProvider({ children }) {
     return weeklyTasks[weekKey]?.completedTasks || [];
   };
 
+  // Function to remove follow-up tasks from all weeks when a study session is completed
+  const removeFollowUpTasksForSubject = (subjectName, lectureNumbers = []) => {
+    console.log(
+      `[STUDY COMPLETION] Looking for follow-up tasks to remove for subject: ${subjectName}, lectures: ${lectureNumbers.join(
+        ", "
+      )}`
+    );
+
+    setWeeklyTasks((prev) => {
+      const updated = { ...prev };
+      let removedCount = 0;
+
+      Object.keys(updated).forEach((weekKey) => {
+        if (updated[weekKey]?.generatedTasks) {
+          const originalLength = updated[weekKey].generatedTasks.length;
+          console.log(
+            `[STUDY COMPLETION] Checking week ${weekKey} - ${originalLength} generated tasks`
+          );
+
+          updated[weekKey].generatedTasks = updated[
+            weekKey
+          ].generatedTasks.filter((task) => {
+            // Remove tasks that match the pattern "Study lecture X in SUBJECT in your next study session"
+            if (task.type === "generated" && task.subject) {
+              console.log(
+                `[STUDY COMPLETION] Found potential task: "${task.subject}"`
+              );
+              console.log(
+                `[STUDY COMPLETION] Looking for subject: "${subjectName}"`
+              );
+
+              // Updated regex to match 'Study lecture X in SUBJECT in your next study session'
+              const studyPattern = new RegExp(
+                `Study lecture (\\d+) in (.+?) in your next study session`,
+                "i"
+              );
+              const match = task.subject.match(studyPattern);
+
+              console.log(
+                `[STUDY COMPLETION] Regex pattern: "${studyPattern.source}"`
+              );
+              console.log(`[STUDY COMPLETION] Match result:`, match);
+
+              if (match) {
+                const taskLectureNumber = parseInt(match[1]);
+                const taskSubjectName = match[2].trim();
+
+                console.log(
+                  `[STUDY COMPLETION] Extracted lecture number: ${taskLectureNumber}`
+                );
+                console.log(
+                  `[STUDY COMPLETION] Extracted subject name: "${taskSubjectName}"`
+                );
+                console.log(
+                  `[STUDY COMPLETION] Target subject name: "${subjectName}"`
+                );
+
+                // Check if the subject names match (case-insensitive)
+                if (
+                  taskSubjectName.toLowerCase() === subjectName.toLowerCase()
+                ) {
+                  console.log(`[STUDY COMPLETION] Subject names match!`);
+
+                  // If specific lecture numbers are provided, only remove matching ones
+                  if (lectureNumbers.length > 0) {
+                    if (lectureNumbers.includes(taskLectureNumber)) {
+                      console.log(
+                        `[STUDY COMPLETION] ✓ Removing follow-up task from week ${weekKey}: ${task.subject} (lecture ${taskLectureNumber} was studied)`
+                      );
+                      return false; // Remove this task
+                    } else {
+                      console.log(
+                        `[STUDY COMPLETION] ✗ Keeping follow-up task from week ${weekKey}: ${task.subject} (lecture ${taskLectureNumber} was not studied in this session)`
+                      );
+                      return true; // Keep this task
+                    }
+                  } else {
+                    // If no specific lecture numbers provided, remove all for this subject (backward compatibility)
+                    console.log(
+                      `[STUDY COMPLETION] Removing follow-up task from week ${weekKey}: ${task.subject} (no specific lectures provided)`
+                    );
+                    return false; // Remove this task
+                  }
+                } else {
+                  console.log(
+                    `[STUDY COMPLETION] Subject names don't match: "${taskSubjectName}" vs "${subjectName}"`
+                  );
+                }
+              } else {
+                console.log(
+                  `[STUDY COMPLETION] Task did not match the expected pattern`
+                );
+              }
+            }
+            return true; // Keep this task
+          });
+          removedCount +=
+            originalLength - updated[weekKey].generatedTasks.length;
+        }
+      });
+
+      if (removedCount > 0) {
+        console.log(
+          `[STUDY COMPLETION] Successfully removed ${removedCount} follow-up tasks for subject: ${subjectName}`
+        );
+      } else {
+        console.log(
+          `[STUDY COMPLETION] No follow-up tasks found to remove for subject: ${subjectName}`
+        );
+      }
+
+      return updated;
+    });
+  };
+
   // Automatically reschedule missed tasks within 24 hours, finding a free slot
   useEffect(() => {
     if (!isTasksLoaded) return;
@@ -496,14 +666,28 @@ export function TasksProvider({ children }) {
       );
       // Prevent double scheduling in this session
       if (processedReschedulesRef.current.has(rescheduleKey)) return;
+
+      // Check if already rescheduled in any week in the database
+      const alreadyRescheduledInAnyWeek = Object.values(weeklyTasks).some(
+        (week) =>
+          week.generatedTasks &&
+          week.generatedTasks.some(
+            (task) => task.rescheduledFrom === rescheduleKey
+          )
+      );
+
       const alreadyRescheduled = generatedTasks.some(
         (task) => task.rescheduledFrom === rescheduleKey
       );
-      if (alreadyRescheduled) {
+
+      if (alreadyRescheduled || alreadyRescheduledInAnyWeek) {
         console.log(
           "[RESCHEDULE] Already rescheduled, skipping:",
           rescheduleKey
         );
+        // Mark as processed to prevent future attempts
+        processedReschedulesRef.current.add(rescheduleKey);
+        saveProcessedReschedules();
         return;
       }
       // Try to find a free slot within 24 hours after the missed session
@@ -543,13 +727,14 @@ export function TasksProvider({ children }) {
               rescheduledFrom: rescheduleKey,
               isRescheduled: true,
               type: rescheduledType,
-              subject: `Study rescheduled session for ${missedTask.subject}`,
+              subject: missedTask.subject, // Use original subject name
+              originalSubject: missedTask.subject, // Keep original for reference
             };
             setGeneratedTasks((prev) => [...prev, newTask]);
-            // Add to timetable
+            // Add to timetable with rescheduled indicator
             currentUser.timetable.schedule[dayName][
               slot
-            ] = `Study: rescheduled session for ${missedTask.subject}`;
+            ] = `Study: ${missedTask.subject} (Rescheduled)`;
             localStorage.setItem("currentUser", JSON.stringify(currentUser));
             // --- Update weeklyTasks state to reflect the new generated task and updated schedule ---
             setWeeklyTasks((prev) => {
@@ -591,6 +776,7 @@ export function TasksProvider({ children }) {
             });
             // Mark this missed task as processed for this session
             processedReschedulesRef.current.add(rescheduleKey);
+            saveProcessedReschedules();
             // Save the updated timetable to the backend using the correct endpoint
             axios
               .put("http://localhost:5100/api/quiz/update-user", {
@@ -611,6 +797,13 @@ export function TasksProvider({ children }) {
     });
   }, [missedTasks, isTasksLoaded, generatedTasks, setGeneratedTasks]);
 
+  const triggerMissedTasksCheckup = async () => {
+    if (!userId || isTasksLoaded) return; // Don't run if already loaded or no user
+
+    console.log("[CALENDAR] Triggering missed tasks checkup...");
+    await initializeAndCatchUp();
+  };
+
   return (
     <TasksContext.Provider
       value={{
@@ -623,6 +816,11 @@ export function TasksProvider({ children }) {
         setMissedTasks,
         generatedTasks,
         setGeneratedTasks,
+        isTasksLoaded,
+        isCalendarReady,
+        setIsCalendarReady,
+        triggerMissedTasksCheckup,
+        removeFollowUpTasksForSubject,
       }}
     >
       {children}
