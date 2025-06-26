@@ -8,6 +8,7 @@ import Insights from "./Insights";
 import SettingsModal from "../components/SettingsModal";
 import axios from "axios";
 import { getWeekKey } from "../contexts/TasksContext";
+import { useTasks } from "../contexts/TasksContext";
 
 function Layout() {
   const [currentUser, setCurrentUser] = useState({});
@@ -18,6 +19,8 @@ function Layout() {
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsModalType, setSettingsModalType] = useState("");
+
+  const { triggerMissedTasksCheckup } = useTasks();
 
   useEffect(() => {
     setCurrentUser(JSON.parse(localStorage.getItem("currentUser")) || {});
@@ -328,26 +331,32 @@ function Layout() {
 
         {/* Main Content */}
         <main className="flex-1 p-6 bg-gray-50 overflow-y-auto">
-          <button
-            onClick={() => setIgnoreSlotRestrictions((prev) => !prev)}
-            className="mb-2 px-4 py-2 bg-yellow-400 rounded cursor-pointer mx-2"
-          >
-            {ignoreSlotRestrictions ? "Enable" : "Disable"} Slot Click
-            Restrictions (added this button for testing purposes)
-          </button>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setIgnoreSlotRestrictions((prev) => !prev)}
+              className="px-4 py-2 bg-yellow-400 rounded cursor-pointer"
+            >
+              {ignoreSlotRestrictions ? "Enable" : "Disable"} Slot Click
+              Restrictions (added this button for testing purposes)
+            </button>
+            <button
+              onClick={handleAdaptSchedule}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Adapt Schedule (Test)
+            </button>
+            {/* <button
+              onClick={triggerMissedTasksCheckup}
+              className="px-4 py-2 bg-red-400 text-black rounded shadow hover:bg-red-500 font-semibold border border-red-500"
+            >
+              Run Missed Tasks Checkup (Test)
+            </button> */}
+          </div>
           <Routes>
             <Route
               path="study-plan"
               element={
-                <>
-                  <button
-                    onClick={handleAdaptSchedule}
-                    className="mb-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Adapt Schedule (Test)
-                  </button>
-                  <Calendar ignoreSlotRestrictions={ignoreSlotRestrictions} />
-                </>
+                <Calendar ignoreSlotRestrictions={ignoreSlotRestrictions} />
               }
             />
             <Route path="tasks" element={<Tasks />} />

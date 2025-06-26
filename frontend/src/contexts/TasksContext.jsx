@@ -245,8 +245,7 @@ export function TasksProvider({ children }) {
 
         if (lastDate < today) {
           const dateIterator = new Date(lastDate);
-          dateIterator.setDate(dateIterator.getDate() + 1);
-
+          dateIterator.setHours(0, 0, 0, 0);
           while (dateIterator < today) {
             const dateString = getDateString(dateIterator);
             console.log(`[DEBUG] Checking missed tasks for ${dateString}`);
