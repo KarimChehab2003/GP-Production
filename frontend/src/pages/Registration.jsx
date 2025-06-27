@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import IntroduceYourselfForm from "../components/introduceYourselfForm";
 import CreateAccountForm from "../components/createAccountForm";
 import CourseForm from "../components/courseForm";
@@ -9,6 +9,11 @@ function Registration() {
   const [createdUser, setCreatedUser] = useState({});
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
+
+  // Clear processedReschedules when navigating to registration
+  useEffect(() => {
+    localStorage.removeItem("processedReschedules");
+  }, []);
 
   const handleSubmit = async (e, updatedUser) => {
     e.preventDefault();

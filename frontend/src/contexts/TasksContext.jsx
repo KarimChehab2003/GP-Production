@@ -239,9 +239,21 @@ export function TasksProvider({ children }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      // Get registration date from user object
+      const registeredDateString = currentUser?.registeredDate;
+      const registeredDate = registeredDateString
+        ? new Date(registeredDateString)
+        : null;
+      if (registeredDate) registeredDate.setHours(0, 0, 0, 0);
+
       if (lastDateString) {
-        const lastDate = new Date(lastDateString);
+        let lastDate = new Date(lastDateString);
         lastDate.setHours(0, 0, 0, 0);
+
+        // Use the later of lastCheckedDate or registeredDate
+        if (registeredDate && registeredDate > lastDate) {
+          lastDate = new Date(registeredDate);
+        }
 
         if (lastDate < today) {
           const dateIterator = new Date(lastDate);

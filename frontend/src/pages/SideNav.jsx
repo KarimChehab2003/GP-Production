@@ -16,8 +16,9 @@ function SideNav({ setIsSettingsModalOpen, setSettingsModalType }) {
 
   const logout = () => {
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("processedReschedules");
     navigate("/login");
-  }
+  };
 
   return (
     <aside className="flex flex-col justify-between items-start p-4 border-2 border-indigo-500 min-w-[200px] max-w-xs">
@@ -74,62 +75,65 @@ function SideNav({ setIsSettingsModalOpen, setSettingsModalType }) {
         </ul>
       </div>
       <div className="flex justify-center items-center space-x-2 text-xl cursor-pointer settings-container relative">
-            <div 
-              className="flex items-center space-x-2"
-              onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+        <div
+          className="flex items-center space-x-2"
+          onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+        >
+          <IoIosSettings />
+          <p>Settings</p>
+        </div>
+
+        {showSettingsDropdown && (
+          <div className="absolute left-30 bottom-0 mt-2 w-60 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                setIsSettingsModalOpen(true);
+                setShowSettingsDropdown(false);
+                setSettingsModalType("profile");
+              }}
             >
-              <IoIosSettings />
-              <p>Settings</p>
-            </div>
-            
-            {showSettingsDropdown && (
-              <div className="absolute left-30 bottom-0 mt-2 w-60 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                <button 
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setIsSettingsModalOpen(true);
-                    setShowSettingsDropdown(false);
-                    setSettingsModalType("profile");
-                  }}
-                >
-                  Update My Profile
-                </button>
-                <button 
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setIsSettingsModalOpen(true);
-                    setShowSettingsDropdown(false);
-                    setSettingsModalType("conflicts");
-                  }}
-                >
-                  Schedule Conflicts
-                </button>
-                <button 
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setIsSettingsModalOpen(true);
-                    setShowSettingsDropdown(false);
-                    setSettingsModalType("collegeSchedule");
-                  }}
-                >
-                  Change My College Schedule
-                </button>
-                <button 
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setIsSettingsModalOpen(true);
-                    setShowSettingsDropdown(false);
-                    setSettingsModalType("externalActivities");
-                  }}
-                >
-                  Change My External Activities
-                </button>
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick = {() => logout()}>
-                  Logout
-                </button>
-              </div>
-            )}
+              Update My Profile
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                setIsSettingsModalOpen(true);
+                setShowSettingsDropdown(false);
+                setSettingsModalType("conflicts");
+              }}
+            >
+              Schedule Conflicts
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                setIsSettingsModalOpen(true);
+                setShowSettingsDropdown(false);
+                setSettingsModalType("collegeSchedule");
+              }}
+            >
+              Change My College Schedule
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                setIsSettingsModalOpen(true);
+                setShowSettingsDropdown(false);
+                setSettingsModalType("externalActivities");
+              }}
+            >
+              Change My External Activities
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              onClick={() => logout()}
+            >
+              Logout
+            </button>
           </div>
+        )}
+      </div>
     </aside>
   );
 }
