@@ -94,9 +94,6 @@ function Quiz({
       return userAnswer === correctAnswer;
     }
 
-    // This fallback is only needed if there are other question types not explicitly handled above
-    // For now, it seems redundant, but keep it if other types might exist or if the logic flow needs it.
-    // Given the current types, this block can likely be removed after testing.
     if (
       (typeof correct === "string" &&
         user.trim().toLowerCase() === correct.trim().toLowerCase()) ||

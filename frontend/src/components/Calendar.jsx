@@ -44,7 +44,6 @@ function Calendar({ setTaskList, ignoreSlotRestrictions = false }) {
     "8PM-10PM",
   ];
 
-  // State to hold the calendar data and week start
   const [calendarData, setCalendarData] = useState([]);
   const [weekStart, setWeekStart] = useState(() => getCurrentWeekStart());
   const {

@@ -157,7 +157,7 @@ export function TasksProvider({ children }) {
     return result;
   };
 
-  // This is a new, pure function. It calculates missed tasks for a specific date
+  // It calculates missed tasks for a specific date
   // using the provided data, without causing any side effects.
   const calculateMissedTasksForDate = (dateString, allTasks) => {
     const weekKey = getWeekKey(new Date(dateString));
@@ -479,7 +479,6 @@ export function TasksProvider({ children }) {
     });
   };
 
-  // Add this function below setCompletedTasks
   const setCompletedTasksForWeek = (weekKey, fn) => {
     setWeeklyTasks((prev) => {
       const week = prev[weekKey] || {
@@ -489,7 +488,6 @@ export function TasksProvider({ children }) {
       };
       const newCompletedTasks =
         typeof fn === "function" ? fn(week.completedTasks) : fn;
-      // Optionally update localStorage here if needed
       return {
         ...prev,
         [weekKey]: {
@@ -555,7 +553,6 @@ export function TasksProvider({ children }) {
                 `[STUDY COMPLETION] Looking for subject: "${subjectName}"`
               );
 
-              // Updated regex to match 'Study lecture X in SUBJECT in your next study session'
               const studyPattern = new RegExp(
                 `Study lecture (\\d+) in (.+?) in your next study session`,
                 "i"
@@ -669,7 +666,7 @@ export function TasksProvider({ children }) {
       if (missedTask.type !== "study") return;
       if (missedTask.rescheduleProcessed) return;
       const rescheduleKey = `${missedTask.day}|${missedTask.time}|${missedTask.subject}|${missedTask.type}`;
-      // Debug: Show what we're checking for
+      // Debug:
       console.log(
         "[RESCHEDULE] Checking for already rescheduled:",
         rescheduleKey,
